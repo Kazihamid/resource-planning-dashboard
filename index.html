@@ -1,0 +1,2665 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#153e75">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="site.webmanifest">
+<title>Project Status and Resource Engagement Plan Dashboard</title>
+<style>
+:root{
+  --bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#64748b;--line:#dfe7f1;
+  --nav:#0f2747;--accent:#2563eb;--accent2:#dbeafe;--teal:#0f766e;
+  --available:#0f766e;--available-bg:#ccfbf1;--moderate:#1d4ed8;--moderate-bg:#dbeafe;
+  --high:#b45309;--high-bg:#fef3c7;--over:#b91c1c;--over-bg:#fee2e2;--none:#94a3b8;--none-bg:#f1f5f9;
+  --purple:#7c3aed;--shadow:0 8px 28px rgba(15,39,71,.07)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+button,input,select{font:inherit}
+.app{max-width:1680px;margin:auto;padding:20px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+.eyebrow{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1{font-size:28px;line-height:1.15;margin:4px 0 6px}
+.sub{color:var(--muted);font-size:13px;max-width:980px;line-height:1.5}
+.source-badge{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:800}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+button{border:0;border-radius:9px;padding:10px 13px;font-weight:750;cursor:pointer;min-height:40px}
+.btn{background:#dbeafe;border:1px solid #93c5fd;color:#1d4ed8}
+.btn-primary{background:linear-gradient(135deg,#2563eb,#4f46e5);color:white;border:1px solid #1d4ed8}
+.btn-success{background:linear-gradient(135deg,#16a34a,#059669);color:white;border:1px solid #15803d}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);border:1px solid #b91c1c;color:white}
+button:disabled{opacity:.5;cursor:not-allowed}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.kpis{display:grid;grid-template-columns:repeat(9,minmax(125px,1fr));gap:9px;margin:12px 0}
+.kpi{padding:13px}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.045em;font-weight:800;min-height:28px}
+.kpi-value{font-size:24px;font-weight:850;margin:2px 0}
+.kpi-foot{font-size:10px;color:var(--muted)}
+.filters{padding:13px;margin-bottom:12px}
+.filter-grid{display:grid;grid-template-columns:repeat(8,minmax(125px,1fr));gap:9px;align-items:end}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;min-height:38px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:8px 9px;font-size:12px}
+.config-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid #edf2f7}
+.config-row .field{width:135px}
+.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-left:auto}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.two{display:grid;grid-template-columns:1.05fr .95fr;gap:12px;margin-bottom:12px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.section{padding:15px;min-width:0}
+.section-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:11px}
+.section h2{font-size:16px;margin:0}
+.desc{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+.plan-chip{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:5px 8px;background:#f1f5f9;font-size:11px;font-weight:800}
+.scenario-banner{display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:11px;padding:10px 12px;color:#9a3412;font-size:12px;margin-bottom:10px}
+.scenario-banner.show{display:block}
+.compare-wrap,.scroll{overflow:auto}
+.compare{border-collapse:collapse;width:100%;min-width:650px}
+.compare th,.compare td{padding:8px 9px;border-bottom:1px solid #eef2f7;text-align:right;font-size:11px}
+.compare th:first-child,.compare td:first-child{text-align:left}
+.compare th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc}
+.delta-pos{color:#b91c1c;font-weight:800}.delta-neg{color:#15803d;font-weight:800}
+.resource-bars{display:flex;flex-direction:column;gap:11px}
+.involvement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.involve-card{border:1px solid var(--line);border-radius:12px;padding:13px;background:#fff;min-width:0}
+.involve-card.featured{border-color:#93c5fd;background:#f8fbff}
+.involve-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.involve-name{font-size:15px;font-weight:850}
+.involve-status{font-size:10px;font-weight:850;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.involve-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
+.im{border:1px solid #edf2f7;border-radius:9px;padding:8px;background:#fafcff}
+.im b{display:block;font-size:17px}.im span{font-size:9px;color:var(--muted);line-height:1.25;display:block}
+.involve-foot{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:10px;font-size:10px;color:var(--muted);flex-wrap:wrap}
+.focus-btn{min-height:30px;padding:5px 8px;font-size:10px}
+.rb-row{display:grid;grid-template-columns:100px 1fr 72px;gap:9px;align-items:center}
+.rb-name{font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:14px;border-radius:999px;background:#eef2f7;overflow:hidden;position:relative}
+.bar > span{height:100%;display:block;border-radius:999px;min-width:0}
+.rb-val{text-align:right;font-size:11px;font-weight:850}
+.forecast-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
+.forecast{border-collapse:separate;border-spacing:0;min-width:760px;width:100%}
+.forecast th{position:sticky;top:0;background:#f8fafc;color:var(--muted);font-size:10px;padding:7px;border-bottom:1px solid var(--line);white-space:nowrap}
+.forecast td{font-size:10px;text-align:center;border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;padding:0}
+.forecast .res{position:sticky;left:0;background:white;z-index:1;text-align:left;font-size:11px;font-weight:800;padding:8px;min-width:100px}
+.heat{min-width:54px;height:38px;display:flex;align-items:center;justify-content:center;font-weight:850}
+.c-none{background:var(--none-bg);color:var(--none)}.c-available{background:var(--available-bg);color:#115e59}
+.c-moderate{background:var(--moderate-bg);color:#1d4ed8}.c-high{background:var(--high-bg);color:#92400e}.c-over{background:var(--over-bg);color:#991b1b}
+.gantt-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:460px}
+.gantt{min-width:900px}
+.g-head,.g-row{display:grid;grid-template-columns:110px 210px 95px 1fr;gap:0;align-items:center}
+.g-head{position:sticky;top:0;z-index:5;background:#f8fafc;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.g-head>div,.g-row>div{padding:8px;border-right:1px solid #eef2f7}
+.g-row{border-bottom:1px solid #eef2f7;font-size:11px;min-height:42px;background:white}
+.g-row:hover{background:#fafcff}
+.g-title{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.timeline{position:relative;height:24px;background:repeating-linear-gradient(90deg,#f8fafc 0,#f8fafc calc(10% - 1px),#e9eff6 calc(10% - 1px),#e9eff6 10%);border-radius:6px;overflow:hidden}
+.gbar{position:absolute;top:4px;height:16px;border-radius:5px;background:#64748b;min-width:4px}
+.gbar.conflict{outline:2px solid #dc2626;outline-offset:-1px;background:#fca5a5}
+.overlap-table{border-collapse:collapse;width:100%;min-width:760px}
+.overlap-table th,.overlap-table td{padding:8px 9px;border-bottom:1px solid #eef2f7;font-size:11px;vertical-align:top}
+.overlap-table th{background:#f8fafc;text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase}
+.status{display:inline-block;padding:4px 7px;border-radius:999px;font-size:10px;font-weight:850}
+.status-over{background:var(--over-bg);color:var(--over)}.status-overlap{background:var(--high-bg);color:var(--high)}
+.cap-chart{display:flex;flex-direction:column;gap:9px}
+.cap-row{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:center}
+.cap-bars{position:relative;height:24px;background:#f1f5f9;border-radius:7px;overflow:hidden}
+.cap-demand{position:absolute;left:0;top:3px;height:8px;border-radius:4px;background:#2563eb}
+.cap-capacity{position:absolute;left:0;bottom:3px;height:8px;border-radius:4px;background:#94a3b8}
+.note{border:1px solid var(--line);background:#fafcff;border-radius:10px;padding:10px;margin-bottom:8px}
+.note strong{font-size:12px;display:block;margin-bottom:3px}.note p{font-size:11px;color:var(--muted);margin:0;line-height:1.45}
+.register{margin-top:12px}
+.register-toolbar{display:flex;gap:8px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
+.register-search{width:min(360px,100%)}
+.table-wrap{overflow:auto;max-height:650px;border:1px solid var(--line);border-radius:10px}
+.project-table{border-collapse:collapse;width:100%;min-width:1450px}
+.project-table th{position:sticky;top:0;z-index:5;background:#f8fafc;color:#475569;font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:8px;border-bottom:1px solid var(--line);text-align:left}
+.project-table td{padding:7px 8px;border-bottom:1px solid #eef2f7;font-size:11px;vertical-align:middle}
+.project-table tr.changed td{background:#fffaf0}
+.project-table tr.added td{background:#f0fdf4}
+.project-table tr.removed td{opacity:.5;text-decoration:line-through;background:#f8fafc}
+.project-table input,.project-table select{min-height:32px;padding:5px 6px;font-size:11px}
+.resource-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;min-width:280px}
+.alloc-note{font-size:10px;color:var(--muted);margin-top:3px}
+.row-actions{display:flex;gap:5px}
+.row-actions button{min-height:30px;padding:5px 8px;font-size:10px}
+.data-quality{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dq{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}
+.dq b{font-size:20px;display:block}.dq span{font-size:10px;color:var(--muted)}
+.add-project{display:none;margin-top:10px;border:1px dashed #93c5fd;background:#f8fbff;padding:12px;border-radius:11px}
+.add-project.show{display:block}
+.add-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end}
+.toast{position:fixed;right:18px;bottom:18px;background:#172033;color:white;padding:10px 13px;border-radius:9px;font-size:12px;box-shadow:0 8px 25px rgba(15,23,42,.25);opacity:0;transform:translateY(10px);pointer-events:none;transition:.2s;z-index:50}
+.toast.show{opacity:1;transform:translateY(0)}
+.small{font-size:10px;color:var(--muted)}
+.empty{padding:22px;text-align:center;color:var(--muted);font-size:12px}
+@media(max-width:1250px){.kpis{grid-template-columns:repeat(5,1fr)}.filter-grid{grid-template-columns:repeat(4,1fr)}.three{grid-template-columns:1fr}.add-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.two{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.involvement-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.app{padding:10px}.kpis{grid-template-columns:repeat(2,1fr)}.filter-grid{grid-template-columns:repeat(2,1fr)}.add-grid{grid-template-columns:1fr}.config-row .field{width:calc(50% - 5px)}.legend{margin-left:0}.rb-row{grid-template-columns:80px 1fr 58px}h1{font-size:23px}}
+
+/* ===== Executive Dashboard Theme ===== */
+:root{
+  --exec-navy:#102a43;
+  --exec-blue:#2563eb;
+  --exec-cyan:#0891b2;
+  --exec-teal:#0f766e;
+  --exec-green:#16a34a;
+  --exec-amber:#d97706;
+  --exec-orange:#ea580c;
+  --exec-red:#dc2626;
+  --exec-purple:#7c3aed;
+  --exec-pink:#db2777;
+  --exec-indigo:#4f46e5;
+}
+body{
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37,99,235,.10), transparent 27%),
+    radial-gradient(circle at 92% 5%, rgba(124,58,237,.08), transparent 24%),
+    linear-gradient(180deg,#eef5ff 0,#f7f9fc 280px,#f4f7fb 100%);
+}
+.app{padding-top:18px}
+.header{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(118deg,#0f2747 0%,#153e75 48%,#4f46e5 100%);
+  color:#fff;
+  border-radius:20px;
+  padding:24px 26px;
+  box-shadow:0 18px 45px rgba(15,39,71,.18);
+  margin-bottom:16px;
+}
+.header:before{
+  content:"";
+  position:absolute;
+  width:260px;height:260px;
+  border-radius:50%;
+  right:-85px;top:-125px;
+  background:rgba(255,255,255,.09);
+}
+.header:after{
+  content:"";
+  position:absolute;
+  width:180px;height:180px;
+  border-radius:50%;
+  right:130px;bottom:-145px;
+  background:rgba(34,211,238,.13);
+}
+.header > *{position:relative;z-index:1}
+.header .eyebrow{color:#bfdbfe}
+.header h1{font-size:31px;letter-spacing:-.025em;margin-top:6px}
+.header .sub{color:#dbeafe;max-width:1050px}
+.header .sub b{color:#fff}
+.source-badge{
+  background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.25);
+  color:#fff;
+  backdrop-filter:blur(5px);
+  padding:8px 12px;
+}
+.header .btn{
+  color:#eaf2ff;
+  background:#2563eb;
+  border-color:#60a5fa;
+}
+.header .btn:hover{background:rgba(255,255,255,.18)}
+.header .btn-success{
+  background:linear-gradient(135deg,#16a34a,#059669);
+  box-shadow:0 5px 14px rgba(5,150,105,.28)
+}
+.header .btn-danger{
+  color:#fff;
+  background:#dc2626;
+  border-color:#f87171
+}
+
+.panel{
+  border-color:#d9e5f3;
+  box-shadow:0 8px 24px rgba(31,65,114,.065);
+}
+.kpis{gap:11px}
+.kpi{
+  position:relative;
+  overflow:hidden;
+  min-height:112px;
+  color:#fff;
+  border:0;
+  box-shadow:0 10px 24px rgba(31,65,114,.12);
+}
+.kpi:after{
+  content:"";
+  position:absolute;
+  width:74px;height:74px;
+  border-radius:50%;
+  right:-25px;bottom:-34px;
+  background:rgba(255,255,255,.12);
+}
+.kpi:nth-child(1){background:linear-gradient(135deg,#2563eb,#1d4ed8)}
+.kpi:nth-child(2){background:linear-gradient(135deg,#7c3aed,#6d28d9)}
+.kpi:nth-child(3){background:linear-gradient(135deg,#0891b2,#0e7490)}
+.kpi:nth-child(4){background:linear-gradient(135deg,#0f766e,#0d9488)}
+.kpi:nth-child(5){background:linear-gradient(135deg,#16a34a,#15803d)}
+.kpi:nth-child(6){background:linear-gradient(135deg,#d97706,#b45309)}
+.kpi:nth-child(7){background:linear-gradient(135deg,#4f46e5,#4338ca)}
+.kpi:nth-child(8){background:linear-gradient(135deg,#ea580c,#c2410c)}
+.kpi:nth-child(9){background:linear-gradient(135deg,#dc2626,#b91c1c)}
+.kpi .kpi-label,.kpi .kpi-foot{color:rgba(255,255,255,.78)}
+.kpi .kpi-value{color:#fff;font-size:27px}
+.kpi .kpi-label{min-height:26px}
+
+.filters{
+  border-top:4px solid #2563eb;
+  background:linear-gradient(180deg,#fff,#fbfdff);
+}
+.section{position:relative}
+.section h2{
+  font-size:17px;
+  color:#17324d;
+  letter-spacing:-.01em;
+}
+.section-head:before{
+  content:"";
+  width:5px;
+  align-self:stretch;
+  min-height:34px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#2563eb,#7c3aed);
+  margin-right:2px;
+}
+.section-head > div:first-child{flex:1}
+.plan-chip{
+  background:linear-gradient(135deg,#eef2ff,#eff6ff);
+  color:#4338ca;
+  border:1px solid #c7d2fe;
+}
+.btn-primary{
+  background:linear-gradient(135deg,#2563eb,#4f46e5);
+  box-shadow:0 5px 13px rgba(37,99,235,.18)
+}
+.btn-success{background:linear-gradient(135deg,#16a34a,#059669)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
+
+.scenario-banner{
+  background:linear-gradient(90deg,#fff7ed,#fffbeb);
+  border-color:#fdba74;
+  box-shadow:0 5px 18px rgba(217,119,6,.07)
+}
+.compare th,.overlap-table th,.project-table th,.forecast th,.g-head{
+  background:linear-gradient(180deg,#f8fbff,#edf4fb);
+}
+.compare tbody tr:nth-child(even) td,
+.overlap-table tbody tr:nth-child(even) td,
+.project-table tbody tr:nth-child(even):not(.changed):not(.added):not(.removed) td{
+  background:#fbfdff;
+}
+.involve-card{
+  box-shadow:0 5px 14px rgba(31,65,114,.055);
+  border-top:4px solid #0891b2;
+}
+.involve-card:nth-child(2){border-top-color:#7c3aed}
+.involve-card:nth-child(3){border-top-color:#16a34a}
+.involve-card.featured{
+  border-color:#60a5fa;
+  border-top:5px solid #2563eb;
+  background:linear-gradient(145deg,#f5f9ff,#eef6ff);
+  box-shadow:0 10px 25px rgba(37,99,235,.11)
+}
+.im:nth-child(1){background:#eff6ff;border-color:#dbeafe}
+.im:nth-child(2){background:#f5f3ff;border-color:#ede9fe}
+.im:nth-child(3){background:#fff7ed;border-color:#ffedd5}
+.im:nth-child(4){background:#ecfdf5;border-color:#d1fae5}
+
+.forecast-wrap,.gantt-wrap,.table-wrap{
+  border-color:#d8e4f0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+}
+.c-none{background:#f1f5f9;color:#94a3b8}
+.c-available{background:linear-gradient(135deg,#d1fae5,#ccfbf1);color:#047857}
+.c-moderate{background:linear-gradient(135deg,#dbeafe,#e0e7ff);color:#1d4ed8}
+.c-high{background:linear-gradient(135deg,#fef3c7,#ffedd5);color:#b45309}
+.c-over{background:linear-gradient(135deg,#fee2e2,#ffe4e6);color:#b91c1c}
+.heat{transition:transform .12s ease,box-shadow .12s ease}
+.heat:hover{transform:scale(1.045);box-shadow:0 4px 12px rgba(15,39,71,.15);z-index:2}
+
+.gbar{background:linear-gradient(90deg,#2563eb,#60a5fa)}
+.gbar.conflict{background:linear-gradient(90deg,#ef4444,#fb7185)}
+.cap-demand{background:linear-gradient(90deg,#2563eb,#0891b2)}
+.cap-capacity{background:linear-gradient(90deg,#94a3b8,#64748b)}
+.bar{background:#e8eef6}
+.note{
+  border-left:4px solid #2563eb;
+  background:linear-gradient(90deg,#f8fbff,#fff);
+}
+.note:nth-child(2){border-left-color:#16a34a}
+.note:nth-child(3){border-left-color:#d97706}
+.note:nth-child(4){border-left-color:#7c3aed}
+.dq{
+  position:relative;
+  overflow:hidden;
+  border:0;
+  box-shadow:0 5px 14px rgba(31,65,114,.07);
+}
+.dq:nth-child(1){background:#eff6ff;color:#1d4ed8}
+.dq:nth-child(2){background:#f5f3ff;color:#6d28d9}
+.dq:nth-child(3){background:#fff7ed;color:#c2410c}
+.dq:nth-child(4){background:#fef2f2;color:#b91c1c}
+.dq span{color:#64748b}
+.status-over{background:#fee2e2;color:#b91c1c}
+.status-overlap{background:#fef3c7;color:#b45309}
+
+.register{
+  border-top:5px solid transparent;
+  border-image:linear-gradient(90deg,#2563eb,#7c3aed,#0891b2) 1;
+}
+.add-project{
+  background:linear-gradient(135deg,#eff6ff,#f5f3ff);
+  border-color:#93c5fd;
+}
+.project-table tr.changed td{background:#fff8e8}
+.project-table tr.added td{background:#ecfdf5}
+
+.toast{
+  background:linear-gradient(135deg,#102a43,#153e75);
+  border:1px solid rgba(255,255,255,.13)
+}
+@media(max-width:720px){
+  .header{padding:20px 16px;border-radius:16px}
+  .header h1{font-size:25px}
+  .kpi{min-height:100px}
+}
+
+
+/* ===== Register UX v3 ===== */
+.assignment-slots{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:7px;min-width:780px}
+.assignment-slot,.resource-role-pair{display:grid;grid-template-columns:minmax(115px,1fr) minmax(125px,1fr);gap:5px;align-items:center;padding:5px;border:1px solid #e8eef6;border-radius:8px;background:#fbfdff}
+.assignment-slot .slot-label{grid-column:1/-1;font-size:9px;font-weight:850;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.project-table tr.outside-filter td{box-shadow:inset 0 2px 0 #f59e0b,inset 0 -2px 0 #f59e0b;background:#fffbeb!important}
+.filter-pin{display:inline-block;margin-left:5px;padding:2px 5px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:9px;font-weight:850}
+.create-project-title{grid-column:1/-1;font-size:13px;font-weight:850;color:#17324d;padding-bottom:3px;border-bottom:1px solid #dbe7f3}
+.test-status-chip{display:inline-flex;align-items:center;padding:3px 6px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:9px;font-weight:800}
+@media(max-width:720px){.assignment-slot{grid-template-columns:1fr}.assignment-slot .slot-label{grid-column:1}}
+
+
+.pool-manager{display:flex;gap:6px;align-items:end;flex-wrap:wrap;padding:6px 8px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fbff}
+.pool-manager .field{width:150px}
+.pool-manager .btn-danger{min-height:38px}
+.project-table{min-width:1780px}
+.project-table .resource-role-pair select{min-width:0}
+
+
+.btn:hover{filter:brightness(.97);transform:translateY(-1px)}
+.btn-primary:hover,.btn-success:hover,.btn-danger:hover{filter:brightness(1.04)}
+#exportScenario{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:1px solid #6d28d9}
+#resetFilters{background:linear-gradient(135deg,#0891b2,#0e7490);color:#fff;border-color:#0e7490}
+#addResource,#addTestStatusBtn,#addSourceStatusBtn{background:linear-gradient(135deg,#2563eb,#0891b2);color:#fff;border-color:#2563eb}
+.project-category{min-width:145px}
+
+/* ===== V6 UI/UX refinement ===== */
+button,.btn,.btn-primary,.btn-success,.btn-danger{
+  min-height:38px;height:38px;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:750;
+  border:1px solid #cbd8e6;box-shadow:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn,button{background:#f4f7fb;color:#334155;border-color:#d6e0ea}
+.btn:hover,button:hover{background:#eaf0f7}
+.btn-primary{background:#e8efff;color:#1d4ed8;border-color:#c7d7fe}
+.btn-primary:hover{background:#dbe7ff}
+.btn-success{background:#e8f6ee;color:#166534;border-color:#bfe3cc}
+.btn-success:hover{background:#d9f0e2}
+.btn-danger{background:#fff0f0;color:#b42318;border-color:#f5c4c0}
+.btn-danger:hover{background:#ffe4e4}
+.header .btn,.header .btn-primary,.header .btn-success,.header .btn-danger{background:rgba(255,255,255,.13);color:#fff;border-color:rgba(255,255,255,.27)}
+.header .btn:hover,.header .btn-primary:hover,.header .btn-success:hover,.header .btn-danger:hover{background:rgba(255,255,255,.20)}
+input,select{min-height:38px;height:38px;padding:7px 9px;border-radius:8px}
+.project-table input,.project-table select{min-height:32px;height:32px}
+.row-actions button{min-height:30px;height:30px;padding:4px 8px}
+.segment-label{display:flex;align-items:center;gap:9px;margin:16px 0 9px;color:#17324d;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.07em}
+.segment-label:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,#cdd9e7,transparent)}
+.setup-panel{margin:12px 0 16px;overflow:hidden;border-top:4px solid #64748b;background:linear-gradient(180deg,#fff,#fbfcfe)}
+.setup-panel>summary{list-style:none;cursor:pointer;padding:14px 16px;font-size:15px;font-weight:850;color:#243b53;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.setup-panel>summary::-webkit-details-marker{display:none}
+.setup-panel>summary:after{content:"Open setup";font-size:10px;font-weight:750;color:#64748b;background:#f1f5f9;border:1px solid #dbe4ee;border-radius:999px;padding:5px 8px}
+.setup-panel[open]>summary:after{content:"Close setup"}
+.setup-body{padding:0 15px 15px}
+.setup-grid{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:10px}
+.setup-card{border:1px solid #dfe7f1;border-radius:12px;background:#fff;padding:12px;min-width:0}
+.setup-card.wide{grid-column:1/-1}
+.setup-card h3{font-size:13px;color:#243b53;margin:0 0 3px}
+.setup-card .desc{margin-bottom:10px}
+.setup-fields{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;align-items:end}
+.setup-actions{display:flex;gap:7px;align-items:end;flex-wrap:wrap;margin-top:8px}
+.setup-inline{display:grid;grid-template-columns:minmax(140px,1fr) auto minmax(140px,1fr) auto;gap:7px;align-items:end}
+.role-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.role-chip{font-size:10px;padding:5px 8px;border-radius:999px;background:#eef3f8;color:#52667a;border:1px solid #dde6ef}
+.filter-admin-note{margin-top:10px;padding-top:10px;border-top:1px solid #edf2f7;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.register-toolbar{align-items:end}
+.register-tools{display:flex;gap:7px;align-items:end;flex-wrap:wrap}
+.register-search{width:min(420px,100%)}
+.project-table{min-width:1960px}
+.project-table td .inline-text{min-width:110px}
+.project-table td .task-input{min-width:260px}
+.project-table td .pm-input{min-width:105px}
+.draft-badge{display:inline-block;margin-top:3px;padding:3px 6px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-size:9px;font-weight:850}
+.project-table tr.draft td{background:#f0f9ff!important}
+.overlap-full{margin-top:14px}
+.gantt-full{margin-bottom:12px}
+@media(max-width:1250px){.setup-grid{grid-template-columns:1fr 1fr}.setup-card.wide{grid-column:1/-1}.setup-fields{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.setup-grid{grid-template-columns:1fr}.setup-card.wide{grid-column:auto}.setup-fields,.setup-inline{grid-template-columns:1fr}.register-tools{width:100%}.register-search{width:100%}}
+
+
+/* Data & Plan Management */
+.data-plan-card{grid-column:1/-1;border-left:4px solid #0f766e;background:linear-gradient(135deg,#f7fffd,#f8fbff)}
+.data-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.data-actions button{min-width:132px}
+.autosave-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:9px 10px;border:1px solid #dce8e5;border-radius:9px;background:#fff}
+.autosave-row label{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:#334155}
+.autosave-row input[type="checkbox"]{width:17px;height:17px;min-height:auto}
+.persist-status{font-size:10px;color:#64748b;flex:1}
+.import-summary{font-size:10px;color:#475569;margin-top:8px;line-height:1.45}
+.file-input-hidden{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.btn-data{background:#e6f5f1!important;color:#0f5f56!important;border:1px solid #b8ddd5!important}
+.btn-data:hover{background:#d9efe9!important}
+.btn-plan{background:#edf2ff!important;color:#3f4f9b!important;border:1px solid #cfd8fa!important}
+.btn-plan:hover{background:#e2e9ff!important}
+.btn-clear-local{background:#fff7ed!important;color:#9a5b16!important;border:1px solid #fed7aa!important}
+
+
+/* Standardized Import Workflow */
+.validation-panel{display:none;margin-top:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:11px}
+.validation-panel.show{display:block}
+.validation-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.validation-title{font-size:12px;font-weight:850;color:#17324d}
+.validation-stats{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.vstat{border-radius:999px;padding:5px 8px;font-size:10px;font-weight:800}
+.vstat.valid{background:#dcfce7;color:#166534}.vstat.warn{background:#fef3c7;color:#92400e}.vstat.error{background:#fee2e2;color:#991b1b}
+.validation-list{margin-top:8px;max-height:180px;overflow:auto;border-top:1px solid #eef2f7;padding-top:7px}
+.validation-item{font-size:10px;line-height:1.45;padding:4px 0;border-bottom:1px dashed #edf2f7;color:#475569}
+.validation-item.error{color:#991b1b}.validation-item.warn{color:#92400e}
+.validation-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.template-note{font-size:10px;color:#475569;margin-top:6px;line-height:1.45}
+.btn-template{background:#e8f2fb!important;color:#285a82!important;border:1px solid #c7ddeb!important}
+.btn-template:hover{background:#dcecf8!important}
+
+
+.btn-source{background:#eef8f4!important;color:#0f6b57!important;border:1px solid #b9dfd2!important}
+.btn-source:hover{background:#e1f2ec!important}
+.source-status-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding:8px 10px;border:1px solid #dce8e5;border-radius:9px;background:#f9fffd}
+.source-status-row b{color:#0f5f56}
+.source-status-text{font-size:10px;color:#64748b;flex:1}
+
+
+/* Professional PDF export controls */
+.pdf-export-menu{position:relative}
+.pdf-export-menu>summary{list-style:none;cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px;min-height:40px;padding:9px 14px;border:1px solid rgba(255,255,255,.30);border-radius:9px;background:rgba(255,255,255,.16);color:#fff;font-size:12px;font-weight:800}
+.pdf-export-menu>summary::-webkit-details-marker{display:none}
+.pdf-export-menu>summary:after{content:"▾";font-size:10px;opacity:.85}
+.pdf-export-menu[open]>summary{background:rgba(255,255,255,.24)}
+.pdf-export-list{position:absolute;right:0;top:46px;z-index:80;width:245px;padding:7px;background:#fff;border:1px solid #d8e4f0;border-radius:11px;box-shadow:0 14px 36px rgba(15,39,71,.20)}
+.pdf-export-list button{width:100%;min-height:36px;text-align:left;padding:8px 10px;margin:0 0 4px;background:#f8fbff;color:#17324d;border:1px solid #e3ebf4;border-radius:7px;font-size:11px;font-weight:750}
+.pdf-export-list button:last-child{margin-bottom:0}
+.pdf-export-list button:hover{background:#edf4ff;border-color:#c9d9ec}
+.btn-pdf{background:#f3f6fb!important;color:#294b70!important;border:1px solid #cfdae8!important;box-shadow:none!important}
+.btn-pdf:hover{background:#eaf0f8!important}
+.section-pdf-toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.pdf-report-active{outline:2px solid rgba(37,99,235,.18);outline-offset:2px}
+.pdf-export-progress{position:fixed;inset:auto 18px 18px auto;z-index:120;display:none;max-width:360px;padding:11px 14px;border-radius:10px;background:#102a43;color:#fff;box-shadow:0 12px 28px rgba(15,39,71,.25);font-size:11px;font-weight:700}
+.pdf-export-progress.show{display:block}
+@media(max-width:720px){.pdf-export-list{right:auto;left:0;width:min(260px,calc(100vw - 36px))}}
+
+
+/* ===== PDF menu visibility / viewport positioning fix ===== */
+.header{
+  overflow:visible !important;
+  z-index:200 !important;
+  isolation:isolate;
+  background:
+    radial-gradient(circle at 101% -34%, rgba(255,255,255,.10) 0 128px, transparent 130px),
+    radial-gradient(circle at 84% 145%, rgba(34,211,238,.13) 0 88px, transparent 90px),
+    linear-gradient(118deg,#0f2747 0%,#153e75 48%,#4f46e5 100%) !important;
+}
+.header:before,.header:after{display:none !important}
+.header .toolbar{position:relative;z-index:230;overflow:visible}
+.pdf-export-menu{position:relative;z-index:250}
+.pdf-export-menu[open]{z-index:260}
+.pdf-export-list{
+  position:fixed !important;
+  z-index:99999 !important;
+  top:0;
+  left:0;
+  right:auto !important;
+  width:300px;
+  min-width:0 !important;
+  max-width:calc(100vw - 16px) !important;
+  max-height:min(430px,70vh);
+  overflow-y:auto;
+  overflow-x:hidden;
+  box-sizing:border-box;
+  visibility:visible;
+  opacity:1;
+  pointer-events:auto;
+}
+.pdf-export-list button{
+  position:relative;
+  z-index:100000;
+  cursor:pointer;
+  width:100%;
+  box-sizing:border-box;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:normal;
+  line-height:1.25;
+}
+.kpis,.filters,.panel{position:relative;z-index:1}
+
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="header">
+    <div>
+      <h1>Project Status and Resource Engagement Plan Dashboard</h1>
+    </div>
+    <div class="toolbar">
+      <details class="pdf-export-menu" id="pdfExportMenu">
+        <summary aria-label="Open PDF export menu">Export PDF</summary>
+        <div class="pdf-export-list">
+          <button type="button" data-pdf-export="full">Export Full Dashboard</button>
+          <button type="button" data-pdf-export="selected">Export Current / Selected Segment</button>
+          <button type="button" data-pdf-export="register">Export Project &amp; Resource Register</button>
+          <button type="button" data-pdf-export="forecast">Export Resource Load Forecast</button>
+          <button type="button" data-pdf-export="gantt">Export Project–Resource Gantt</button>
+          <button type="button" data-pdf-export="overlap">Export Overlapped Load Forecast</button>
+        </div>
+      </details>
+      <button class="btn-success" id="applyScenario">Apply Proposed</button>
+      <button class="btn-danger" id="resetSource">Reset to Source</button>
+    </div>
+  </header>
+
+  <div id="scenarioBanner" class="scenario-banner"></div>
+
+  <section class="kpis" id="kpis" data-report-segment="summary"></section>
+
+  <section class="panel filters">
+    <div class="filter-grid">
+      <div class="field"><label>Timeline</label><select id="scale"><option value="week">Weekly</option><option value="month">Monthly</option><option value="quarter">Quarterly</option></select></div>
+      <div class="field"><label>Project</label><select id="projectFilter"><option value="">All Projects</option><option>HRMS</option><option>E-Recruitment</option><option>FM Dashboard</option><option>ED Dashboard</option><option>BHP</option><option>BSL</option><option>BRAC International</option><option>BBSO</option><option>CMN</option></select></div>
+      <div class="field"><label>Project Search</label><input id="projectSearch" placeholder="JIRA ID or task details..."></div>
+      <div class="field"><label>Resource</label><select id="resourceFilter"><option value="">All Resources</option></select></div>
+      <div class="field"><label>Role</label><select id="roleFilter"><option value="">All Roles</option></select></div>
+      <div class="field"><label>Project / Source Status</label><select id="statusFilter"><option value="">All Project Statuses</option></select></div>
+      <div class="field"><label>Test Status</label><select id="testStatusFilter"><option value="">All Test Statuses</option></select></div>
+      <div class="field"><label>Priority</label><select id="priorityFilter"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option><option>Critical</option><option>Unspecified</option><option>Hot Fix</option></select></div>
+      <div class="field"><label>Search</label><input id="searchFilter" placeholder="Jira, project, PM..."></div>
+      <div class="field"><label>Date From</label><input id="dateFrom" type="date"></div>
+      <div class="field"><label>Date To</label><input id="dateTo" type="date"></div>
+      <div class="field"><label>Capacity MD / workday</label><input id="capacity" type="number" min="0.1" max="3" step="0.1" value="1"></div>
+      <div class="field"><label>Effort Model</label><select id="effortModel"><option value="split">Split total effort equally</option><option value="full">Full effort for each resource</option></select></div>
+      <div class="field"><label>Under-utilized &lt; %</label><input id="underThreshold" type="number" min="1" max="99" value="50"></div>
+      <div class="field"><label>High utilization ≥ %</label><input id="highThreshold" type="number" min="1" max="100" value="80"></div>
+      <div class="field"><label>Overloaded &gt; %</label><input id="overThreshold" type="number" min="50" max="300" value="100"></div>
+      <div class="field"><label>Actions</label><button class="btn" id="resetFilters">Reset Filters</button></div>
+    </div>
+
+    <div class="filter-admin-note">
+      <div class="small">Working calendar: Bangladesh default <b>Sunday–Thursday</b>. 1 MD/day = 100% capacity. Administrative create/delete actions are grouped in <b>Setup</b>.</div>
+      <div class="legend">
+        <span><i style="background:var(--none-bg);border:1px solid #cbd5e1"></i>No allocation</span>
+        <span><i style="background:var(--available-bg)"></i>Available / &lt;50%</span>
+        <span><i style="background:var(--moderate-bg)"></i>Moderate</span>
+        <span><i style="background:var(--high-bg)"></i>High</span>
+        <span><i style="background:var(--over-bg)"></i>Overloaded</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="segment-label">Setup & Administration</div>
+  <details class="panel setup-panel" id="setupPanel">
+    <summary>Setup — Create and maintain projects, resources and statuses</summary>
+    <div class="setup-body">
+      <div class="setup-grid">
+        <div class="setup-card data-plan-card">
+          <h3>Data & Plan Management</h3>
+          <div class="desc">Use the standard Project Register template, validate imports before applying them, save/load the full dashboard plan, and keep browser changes automatically for regular management use.</div>
+          <div class="data-actions">
+            <button class="btn-template" id="downloadDemoTemplateBtn">Download Demo Project Register</button>
+            <button class="btn-data" id="importRegisterBtn">Import Project Register</button>
+            <button class="btn-source" id="updateSourceBaselineBtn">Update Source Baseline</button>
+            <button class="btn-source" id="downloadSourceBtn">Download Current Source</button>
+            <button class="btn-plan" id="savePlanBtn">Save Plan</button>
+            <button class="btn-plan" id="loadPlanBtn">Load Plan</button>
+            <button class="btn-clear-local" id="clearLocalDataBtn">Clear Local Data</button>
+            <input class="file-input-hidden" type="file" id="importRegisterFile" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            <input class="file-input-hidden" type="file" id="loadPlanFile" accept=".json,application/json">
+          </div>
+          <div class="autosave-row">
+            <label><input id="autoSaveToggle" type="checkbox" checked> Auto-save changes on this browser</label>
+            <span class="persist-status" id="autoSaveStatus">Auto-save ready.</span>
+          </div>
+          <div class="source-status-row">
+            <b>Reset Source:</b><span class="source-status-text" id="sourceBaselineStatus">Using the embedded baseline.</span>
+          </div>
+          <div class="import-summary" id="importSummary"><b>Recommended workflow:</b> Download Template → replace demo rows with actual data → Import → review validation → Import Valid Rows. When the file has no invalid rows, use <b>Set Valid Rows as Source</b> so Reset to Source restores that maintained baseline.</div>
+          <div class="validation-panel" id="importValidationPanel">
+            <div class="validation-head"><div><div class="validation-title" id="validationTitle">Import validation</div><div class="template-note" id="validationFile"></div></div></div>
+            <div class="validation-stats" id="validationStats"></div>
+            <div class="validation-list" id="validationMessages"></div>
+            <div class="validation-actions"><button class="btn-success" id="confirmImportBtn" disabled>Import Valid Rows</button><button class="btn-source" id="setImportAsSourceBtn" disabled>Set Valid Rows as Source</button><button class="btn" id="cancelImportBtn">Cancel Import</button></div>
+          </div>
+        </div>
+        <div class="setup-card wide">
+          <h3>Create Project</h3>
+          <div class="desc">Create only the Project Name here. Maintain JIRA ID, Task Details, PM, dates, effort, QA resources, roles and Test Status separately through the Project & Resource Register.</div>
+          <div class="setup-fields" style="grid-template-columns:minmax(260px,520px)">
+            <div class="field"><label>Project Name</label><input id="setupProjectName" placeholder="Enter Project Name"></div>
+          </div>
+          <div class="setup-actions"><button class="btn-primary" id="saveNewProject">Create</button><button class="btn" id="cancelAdd">Clear</button></div>
+        </div>
+        <div class="setup-card">
+          <h3>Resource Setup</h3><div class="desc">Maintain the resource pool used by assignment dropdowns.</div>
+          <div class="setup-inline"><div class="field"><label>Add Resource</label><input id="newResource" placeholder="Resource name"></div><button class="btn-primary" id="addResource">Add</button><div class="field"><label>Remove Resource</label><select id="removeResourceSelect"><option value="">Select resource</option></select></div><button class="btn-danger" id="removeResourceBtn">Remove</button></div>
+        </div>
+        <div class="setup-card">
+          <h3>Test Status Setup</h3><div class="desc">Create or delete QA workflow statuses.</div>
+          <div class="setup-inline"><div class="field"><label>Add Status</label><input id="newTestStatus" placeholder="Custom test status"></div><button class="btn-primary" id="addTestStatusBtn">Add</button><div class="field"><label>Remove Status</label><select id="removeTestStatusSelect"><option value="">Select status</option></select></div><button class="btn-danger" id="removeTestStatusBtn">Remove</button></div>
+        </div>
+        <div class="setup-card">
+          <h3>Project / Source Status Setup</h3><div class="desc">Maintain source/project workflow statuses used by filters and new project records.</div>
+          <div class="setup-inline"><div class="field"><label>Add Status</label><input id="newSourceStatus" placeholder="Custom source status"></div><button class="btn-primary" id="addSourceStatusBtn">Add</button><div class="field"><label>Remove Status</label><select id="removeSourceStatusSelect"><option value="">Select status</option></select></div><button class="btn-danger" id="removeSourceStatusBtn">Remove</button></div>
+        </div>
+        <div class="setup-card">
+          <h3>Role Standard</h3><div class="desc">Roles available in the Project & Resource Register and Role filter.</div>
+          <div class="role-chips" id="roleStandardList"></div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="segment-label">Dashboard & Forecast</div>
+
+  <div class="two">
+    <section class="panel section" data-report-segment="summary">
+      <div class="section-head"><div><h2>Current vs Proposed Resource Load</h2><div class="desc">Average and peak utilization over the active forecast horizon.</div></div><span class="plan-chip" id="changeCount">No proposed changes</span></div>
+      <div class="compare-wrap"><table class="compare"><thead><tr><th>Resource</th><th>Current Avg</th><th>Proposed Avg</th><th>Δ Avg</th><th>Current Peak</th><th>Proposed Peak</th></tr></thead><tbody id="compareBody"></tbody></table></div>
+    </section>
+    <section class="panel section" data-report-segment="summary">
+      <div class="section-head"><div><h2>Resource Utilization</h2><div class="desc">Peak forecast load for the selected plan and filters.</div></div><span class="plan-chip" id="viewChip">Proposed Plan</span></div>
+      <div class="resource-bars" id="resourceBars"></div>
+    </section>
+  </div>
+
+  <section class="panel section" style="margin-bottom:12px" data-report-segment="summary">
+    <div class="section-head">
+      <div><h2>Resource Involvement & Availability</h2><div class="desc">Shows each resource's involvement across the full Project Register, even when their dated work is already completed. Future load is calculated separately from today onward.</div></div>
+      <span class="plan-chip">Full Register + Future Capacity</span>
+    </div>
+    <div class="involvement-grid" id="involvementGrid"></div>
+  </section>
+
+  <section class="panel section" style="margin-bottom:12px" id="forecastSection" data-report-segment="forecast">
+    <div class="section-head"><div><h2>Load Forecast & Resource Availability Heatmap</h2><div class="desc">Demand ÷ available capacity. Switch Weekly / Monthly / Quarterly above.</div></div><div class="section-pdf-toolbar"><button type="button" class="btn-pdf" data-pdf-export="forecast">Export PDF</button></div></div>
+    <div class="forecast-wrap"><table class="forecast" id="forecastTable"></table></div>
+  </section>
+
+  <div class="segment-label">Project & Resource Management</div>
+  <section class="panel section register" id="registerSection" data-report-segment="register">
+    <div class="section-head">
+      <div><h2>Project & Resource Register</h2><div class="desc">Search, add, update and remove project/resource records. Changes recalculate load, overlap and capacity immediately. Blue rows are unsaved new rows; yellow rows are changed; green rows are created records.</div></div>
+      <div class="toolbar"><button type="button" class="btn-pdf" data-pdf-export="register">Export PDF</button><button class="btn" id="exportScenario">Export to CSV</button></div>
+    </div>
+    <div class="register-toolbar">
+      <div class="register-tools">
+        <div class="register-search field"><label>Search Project in Register</label><input id="registerSearch" placeholder="JIRA ID or task details..."></div>
+        <button class="btn-primary" id="addRegisterRow">+ Add New</button>
+      </div>
+      <div class="small" id="registerCount"></div>
+    </div>
+    <div class="table-wrap">
+      <table class="project-table">
+        <thead><tr><th>Project</th><th>JIRA ID</th><th>Task Details</th><th>PM</th><th>Start</th><th>End</th><th>Effort MD</th><th>Resource 1 / Role</th><th>Resource 2 / Role</th><th>Resource 3 / Role</th><th>Allocation / Resource</th><th>Test Status</th><th>Action</th></tr></thead>
+        <tbody id="projectBody"></tbody>
+      </table>
+    </div>
+  </section>
+  <div class="gantt-full"><section class="panel section" id="ganttSection" data-report-segment="gantt">
+      <div class="section-head">
+        <div><h2>Project–Resource Gantt</h2><div class="desc">Red outline indicates an assignment that overlaps another project for the same resource during its window. Use Full Register to see completed involvement such as Demo Resource C's Sep assignments.</div></div>
+        <div class="toolbar" style="align-items:end">
+          <div class="field" style="width:170px"><label>Gantt Scope</label><select id="ganttScope"><option value="full">Full Register</option><option value="forecast">Forecast Horizon</option></select></div>
+          <button type="button" class="btn-pdf" data-pdf-export="gantt">Export PDF</button>
+        </div>
+      </div>
+      <div class="gantt-wrap"><div class="gantt" id="gantt"></div></div>
+    </section></div>
+
+  <div class="three">
+    <section class="panel section" data-report-segment="summary">
+      <div class="section-head"><div><h2>Capacity vs Demand</h2><div class="desc">Total forecast demand MD compared with capacity MD.</div></div></div>
+      <div class="cap-chart" id="capacityDemand"></div>
+      <div class="legend" style="margin-top:10px;margin-left:0"><span><i style="background:#2563eb"></i>Demand</span><span><i style="background:#94a3b8"></i>Capacity</span></div>
+    </section>
+    <section class="panel section" data-report-segment="summary">
+      <div class="section-head"><div><h2>Planning Data Quality</h2><div class="desc">Rows that reduce forecast confidence.</div></div></div>
+      <div class="data-quality" id="dataQuality"></div>
+    </section>
+    <section class="panel section" data-report-segment="summary">
+      <div class="section-head"><div><h2>Management Planning Notes</h2><div class="desc">Automatically derived from the selected scenario.</div></div></div>
+      <div id="managementNotes"></div>
+    </section>
+  </div>
+
+
+  <section class="panel section overlap-full" id="overlapSection" data-report-segment="overlap">
+    <div class="section-head"><div><h2>Overlapped Load Forecast</h2><div class="desc">Consecutive overlap windows by resource and simultaneous project set.</div></div><div class="section-pdf-toolbar"><button type="button" class="btn-pdf" data-pdf-export="overlap">Export PDF</button></div></div>
+    <div class="scroll" style="max-height:520px"><table class="overlap-table"><thead><tr><th>Resource</th><th>Projects</th><th>Period</th><th>Combined Load</th><th>Effort</th><th>Capacity Gap</th><th>Status</th></tr></thead><tbody id="overlapBody"></tbody></table></div>
+  </section>
+
+  <div class="small" style="margin:10px 2px 2px">The maintained Source baseline changes only when you explicitly choose Update Source Baseline or Set Valid Rows as Source. Import, Auto-Save, Save Plan, and ordinary edits do not change it. “Apply Proposed” commits the Proposed Plan to the dashboard Current Plan for comparison; “Reset to Source” restores the maintained Source baseline. Auto-Save is browser-local and can be cleared independently. Resource Involvement uses the full register, while Load Forecast uses the future horizon unless you select dates explicitly. Resource roles and Test Status are dashboard planning fields. Setup actions and register edits do not modify the uploaded source workbook; Reset to Source restores the embedded source plan.</div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="pdf-export-progress" id="pdfExportProgress">Preparing PDF report…</div>
+
+<script>
+const SOURCE = [{"uid": "S2", "sourceRow": 2, "projectId": "DEMO-HRMS-101", "projectName": "[DEMO] Employee Profile Enhancement", "pm": "Demo PM 1", "effortMD": 8, "rawEffort": 8, "devRelease": "2026-09-02", "start": "2026-09-06", "end": "2026-09-10", "uatRelease": "2026-09-14", "plannedGoLive": "2026-09-24", "resources": ["Demo Resource A", "Demo Resource C"], "resourceRoles": ["Technical Lead, SQA", "SQA Engineer"], "role": "QA", "priority": "1", "status": "18. Released", "remarks": "", "isSource": true, "projectGroup": "HRMS"},{"uid": "S3", "sourceRow": 3, "projectId": "DEMO-HRMS-102", "projectName": "[DEMO] Leave Approval Workflow Update", "pm": "Demo PM 1", "effortMD": 5, "rawEffort": 5, "devRelease": "2026-09-13", "start": "2026-09-14", "end": "2026-09-17", "uatRelease": "2026-09-20", "plannedGoLive": "2026-10-01", "resources": ["Demo Resource B"], "resourceRoles": ["Sr. SQA Engineer"], "role": "QA", "priority": "2", "status": "11. UAT Done", "remarks": "Waiting for sign-off", "isSource": true, "projectGroup": "HRMS"},{"uid": "S4", "sourceRow": 4, "projectId": "DEMO-HRMS-103", "projectName": "[DEMO] Payroll Report Export", "pm": "Demo PM 2", "effortMD": 10, "rawEffort": 10, "devRelease": "2026-09-27", "start": "2026-09-28", "end": "2026-10-06", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource A", "Demo Resource B"], "resourceRoles": ["Technical Lead, SQA", "Sr. SQA Engineer"], "role": "QA", "priority": "1", "status": "6. TCE in Progress", "remarks": "", "isSource": true, "projectGroup": "HRMS"},{"uid": "S5", "sourceRow": 5, "projectId": "DEMO-HRMS-104", "projectName": "[DEMO] Attendance Dashboard Filters", "pm": "Demo PM 2", "effortMD": 6, "rawEffort": 6, "devRelease": "2026-09-30", "start": "2026-10-01", "end": "2026-10-07", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource C"], "resourceRoles": ["SQA Engineer"], "role": "QA", "priority": "2", "status": "4. TCW Done", "remarks": "", "isSource": true, "projectGroup": "HRMS"},{"uid": "S6", "sourceRow": 6, "projectId": "DEMO-HRMS-105", "projectName": "[DEMO] Performance Review Form Changes", "pm": "Demo PM 1", "effortMD": 12, "rawEffort": 12, "devRelease": "2026-10-12", "start": "2026-10-13", "end": "2026-10-27", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource A", "Demo Resource C"], "resourceRoles": ["Technical Lead, SQA", "SQA Engineer"], "role": "QA", "priority": "", "status": "1. Grooming Done", "remarks": "Development ongoing", "isSource": true, "projectGroup": "HRMS"},{"uid": "S7", "sourceRow": 7, "projectId": "DEMO-HRMS-106", "projectName": "[DEMO] Final Settlement Calculation Fix", "pm": "Demo PM 3", "effortMD": 4, "rawEffort": 4, "devRelease": "2026-10-04", "start": "2026-10-05", "end": "2026-10-08", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource B", "Demo Resource D"], "resourceRoles": ["Sr. SQA Engineer", "Jr. SQA Engineer"], "role": "QA", "priority": "Hot Fix", "status": "2. TCW in Progress", "remarks": "", "isSource": true, "projectGroup": "HRMS"},{"uid": "S8", "sourceRow": 8, "projectId": "DEMO-HRMS-107", "projectName": "[DEMO] Role-Based Access for HR Letters", "pm": "Demo PM 3", "effortMD": 3, "rawEffort": 3, "devRelease": null, "start": null, "end": null, "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource D"], "resourceRoles": ["Jr. SQA Engineer"], "role": "QA", "priority": "", "status": "", "remarks": "Dates to be confirmed", "isSource": true, "projectGroup": "HRMS"},{"uid": "S9", "sourceRow": 9, "projectId": "DEMO-HRMS-108", "projectName": "[DEMO] Organogram View Performance", "pm": "Demo PM 2", "effortMD": 7, "rawEffort": 7, "devRelease": "2026-10-25", "start": "2026-10-26", "end": "2026-11-04", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource B"], "resourceRoles": ["Sr. SQA Engineer"], "role": "QA", "priority": "3", "status": "1. Grooming Done", "remarks": "", "isSource": true, "projectGroup": "HRMS"},{"uid": "S10", "sourceRow": 10, "projectId": "DEMO-HRMS-109", "projectName": "[DEMO] Grid View Behavior", "pm": "Demo PM 1", "effortMD": 2, "rawEffort": 2, "devRelease": null, "start": null, "end": null, "uatRelease": null, "plannedGoLive": null, "resources": [], "resourceRoles": [], "role": "QA", "priority": "", "status": "", "remarks": "Resource not yet assigned", "isSource": true, "projectGroup": "HRMS"},{"uid": "S11", "sourceRow": 11, "projectId": "DEMO-REC-201", "projectName": "[DEMO] Candidate Search Improvement", "pm": "Demo PM 4", "effortMD": 6, "rawEffort": 6, "devRelease": "2026-09-20", "start": "2026-09-21", "end": "2026-09-29", "uatRelease": null, "plannedGoLive": "2026-10-15", "resources": ["Demo Resource C", "Demo Resource D"], "resourceRoles": ["SQA Engineer", "Jr. SQA Engineer"], "role": "QA", "priority": "1", "status": "6. TCE in Progress", "remarks": "", "isSource": true, "projectGroup": "E-Recruitment"},{"uid": "S12", "sourceRow": 12, "projectId": "DEMO-REC-202", "projectName": "[DEMO] Job Posting Approval Flow", "pm": "Demo PM 4", "effortMD": 9, "rawEffort": 9, "devRelease": "2026-10-06", "start": "2026-10-07", "end": "2026-10-20", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource A", "Demo Resource D"], "resourceRoles": ["Technical Lead, SQA", "Jr. SQA Engineer"], "role": "QA", "priority": "2", "status": "1. Grooming Done", "remarks": "", "isSource": true, "projectGroup": "E-Recruitment"},{"uid": "S13", "sourceRow": 13, "projectId": "DEMO-REC-203", "projectName": "[DEMO] Applicant Shortlist Export", "pm": "Demo PM 4", "effortMD": 1.5, "rawEffort": 1.5, "devRelease": "2026-08-24", "start": "2026-08-25", "end": "2026-08-26", "uatRelease": null, "plannedGoLive": "2026-09-03", "resources": ["Demo Resource D"], "resourceRoles": ["Jr. SQA Engineer"], "role": "QA", "priority": "", "status": "18. Released", "remarks": "", "isSource": true, "projectGroup": "E-Recruitment"},{"uid": "S14", "sourceRow": 14, "projectId": "DEMO-REC-204", "projectName": "[DEMO] Interview Scheduling Notifications", "pm": "Demo PM 4", "effortMD": 5, "rawEffort": 5, "devRelease": null, "start": null, "end": null, "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource C"], "resourceRoles": ["SQA Engineer"], "role": "QA", "priority": "", "status": "", "remarks": "Awaiting business requirements", "isSource": true, "projectGroup": "E-Recruitment"},{"uid": "S15", "sourceRow": 15, "projectId": "DEMO-FM-301", "projectName": "[DEMO] Budget vs Actual Chart", "pm": "Demo PM 5", "effortMD": 4, "rawEffort": 4, "devRelease": "2026-10-01", "start": "2026-10-04", "end": "2026-10-08", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource B"], "resourceRoles": ["Sr. SQA Engineer"], "role": "QA", "priority": "2", "status": "4. TCW Done", "remarks": "", "isSource": true, "projectGroup": "FM Dashboard"},{"uid": "S16", "sourceRow": 16, "projectId": "DEMO-FM-302", "projectName": "[DEMO] Monthly Expense Drill-down", "pm": "Demo PM 5", "effortMD": 8, "rawEffort": 8, "devRelease": "2026-11-01", "start": "2026-11-02", "end": "2026-11-12", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource B", "Demo Resource C"], "resourceRoles": ["Sr. SQA Engineer", "SQA Engineer"], "role": "QA", "priority": "", "status": "1. Grooming Done", "remarks": "", "isSource": true, "projectGroup": "FM Dashboard"},{"uid": "S17", "sourceRow": 17, "projectId": "DEMO-ED-401", "projectName": "[DEMO] Executive KPI Tiles", "pm": "Demo PM 5", "effortMD": 6, "rawEffort": 6, "devRelease": "2026-10-18", "start": "2026-10-19", "end": "2026-10-26", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource A"], "resourceRoles": ["Technical Lead, SQA"], "role": "QA", "priority": "1", "status": "1. Grooming Done", "remarks": "", "isSource": true, "projectGroup": "ED Dashboard"},{"uid": "S18", "sourceRow": 18, "projectId": "DEMO-ED-402", "projectName": "[DEMO] Regional Summary Report", "pm": "Demo PM 5", "effortMD": 3, "rawEffort": 3, "devRelease": "2026-09-06", "start": "2026-09-07", "end": "2026-09-09", "uatRelease": "2026-09-13", "plannedGoLive": "2026-09-17", "resources": ["Demo Resource C"], "resourceRoles": ["SQA Engineer"], "role": "QA", "priority": "", "status": "18. Released", "remarks": "", "isSource": true, "projectGroup": "ED Dashboard"},{"uid": "S19", "sourceRow": 19, "projectId": "DEMO-BHP-501", "projectName": "[DEMO] Dashboard Regression Testing", "pm": "Demo PM 6", "effortMD": 5, "rawEffort": 5, "devRelease": "2026-10-18", "start": "2026-10-19", "end": "2026-10-23", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource C", "Demo Resource D"], "resourceRoles": ["SQA Engineer", "Jr. SQA Engineer"], "role": "QA", "priority": "2", "status": "1. Grooming Done", "remarks": "", "isSource": true, "projectGroup": "BHP"},{"uid": "S20", "sourceRow": 20, "projectId": "DEMO-BSL-601", "projectName": "[DEMO] Loan Application Validation", "pm": "Demo PM 6", "effortMD": 10, "rawEffort": 10, "devRelease": "2026-11-08", "start": "2026-11-09", "end": "2026-11-23", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource A", "Demo Resource B"], "resourceRoles": ["Technical Lead, SQA", "Sr. SQA Engineer"], "role": "QA", "priority": "", "status": "1. Grooming Done", "remarks": "", "isSource": true, "projectGroup": "BSL"},{"uid": "S21", "sourceRow": 21, "projectId": "DEMO-BBSO-701", "projectName": "[DEMO] Duplicate Email Notification Fix", "pm": "Demo PM 3", "effortMD": 1, "rawEffort": 1, "devRelease": "2026-09-28", "start": "2026-09-29", "end": "2026-09-29", "uatRelease": null, "plannedGoLive": "2026-10-05", "resources": ["Demo Resource D"], "resourceRoles": ["Jr. SQA Engineer"], "role": "QA", "priority": "Hot Fix", "status": "10. UAT Halt", "remarks": "Stakeholder feedback pending", "isSource": true, "projectGroup": "BBSO"},{"uid": "S22", "sourceRow": 22, "projectId": "DEMO-CMN-801", "projectName": "[DEMO] API Integration Validation", "pm": "Demo PM 6", "effortMD": 4, "rawEffort": 4, "devRelease": "2026-10-25", "start": "2026-10-26", "end": "2026-10-29", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource A", "Demo Resource C"], "resourceRoles": ["Technical Lead, SQA", "SQA Engineer"], "role": "QA", "priority": "", "status": "1. Grooming Done", "remarks": "", "isSource": true, "projectGroup": "CMN"},{"uid": "S23", "sourceRow": 23, "projectId": "DEMO-CMN-802", "projectName": "[DEMO] Sanity Script Preparation", "pm": "Demo PM 6", "effortMD": 1, "rawEffort": 1, "devRelease": "2026-09-01", "start": "2026-09-01", "end": "2026-09-01", "uatRelease": null, "plannedGoLive": null, "resources": [], "resourceRoles": [], "role": "QA", "priority": "", "status": "35. Ready to GoLive", "remarks": "", "isSource": true, "projectGroup": "CMN"},{"uid": "S24", "sourceRow": 24, "projectId": "DEMO-INT-901", "projectName": "[DEMO] Country Payroll Localisation", "pm": "Demo PM 2", "effortMD": 15, "rawEffort": 15, "devRelease": "2026-11-15", "start": "2026-11-16", "end": "2026-12-07", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource B", "Demo Resource D"], "resourceRoles": ["Sr. SQA Engineer", "Jr. SQA Engineer"], "role": "QA", "priority": "", "status": "1. Grooming Done", "remarks": "", "isSource": true, "projectGroup": "BRAC International"},{"uid": "S25", "sourceRow": 25, "projectId": "DEMO-HRMS-110", "projectName": "[DEMO] Year-End Tax Certificate", "pm": "Demo PM 1", "effortMD": 6, "rawEffort": 6, "devRelease": "2026-12-06", "start": "2026-12-07", "end": "2026-12-15", "uatRelease": null, "plannedGoLive": null, "resources": ["Demo Resource A"], "resourceRoles": ["Technical Lead, SQA"], "role": "QA", "priority": "", "status": "", "remarks": "", "isSource": true, "projectGroup": "HRMS"}];
+const TODAY = new Date("2026-09-17T00:00:00");
+const PROJECT_OPTIONS = ["HRMS","E-Recruitment","FM Dashboard","ED Dashboard","BHP","BSL","BRAC International","BBSO","CMN"];
+const PRIORITY_OPTIONS = ["High","Medium","Low","Critical","Unspecified","Hot Fix"];
+const ROLE_OPTIONS = ["Technical Lead, SQA","Lead SQA Engineer","Sr. SQA Engineer","SQA Engineer","Jr. SQA Engineer","Intern"];
+const DEFAULT_TEST_STATUSES = ["Not Started","Test Case Writing","Test Case Review","TCW Done","Ready for Testing","Testing In Progress","TCE In Progress","TCE Halt / Blocked","TCE Done","Retesting","Regression Testing","UAT In Progress","UAT Support","UAT Halt / Blocked","UAT Done","Passed","Failed","On Hold","Completed"];
+let customTestStatuses = [];
+let removedTestStatuses = new Set();
+let customSourceStatuses = [];
+let removedSourceStatuses = new Set();
+function inferProjectGroup(p){
+  const id=(p.projectId||"").toUpperCase();
+  const name=(p.projectName||"").toLowerCase();
+  if(name.includes("brac international")) return "BRAC International";
+  if(name.includes("bsl")) return "BSL";
+  if(name.includes("fm dashboard")) return "FM Dashboard";
+  if(name.includes("ed dashboard")) return "ED Dashboard";
+  if(id.startsWith("RECRV2")) return "E-Recruitment";
+  if(id.startsWith("BHP")) return "BHP";
+  if(id.startsWith("BBSO")) return "BBSO";
+  if(id.startsWith("CMN")) return "CMN";
+  return "HRMS";
+}
+SOURCE.forEach(p=>{
+  if(!Array.isArray(p.resourceRoles)) p.resourceRoles=(p.resources||[]).map(()=>"SQA Engineer");
+  p.resourceRoles=(p.resourceRoles||[]).map(r=>r==="Technical Lead"?"Technical Lead, SQA":(r==="SQA Engineer"||!r?"SQA Engineer":r));
+  p.role=p.role==="Technical Lead"?"Technical Lead, SQA":(p.role==="SQA Engineer"||p.role==="QA"||!p.role?"SQA Engineer":p.role);
+  if(!p.testStatus) p.testStatus=p.status||"Not Started";
+  if(!p.projectGroup) p.projectGroup=inferProjectGroup(p);
+});
+let sourceBaseline = structuredClone(SOURCE);
+let sourceBaselineUpdatedAt = null;
+let currentPlan = structuredClone(sourceBaseline);
+let proposedPlan = structuredClone(sourceBaseline);
+let addedResources = [];
+let uidCounter = 1;
+let pinnedRegisterUids = new Set();
+
+const $ = id => document.getElementById(id);
+const ids = ["scale","projectFilter","projectSearch","resourceFilter","roleFilter","statusFilter","testStatusFilter","priorityFilter","searchFilter","dateFrom","dateTo","capacity","effortModel","underThreshold","highThreshold","overThreshold","ganttScope","resetFilters","newResource","addResource","removeResourceSelect","removeResourceBtn","newTestStatus","addTestStatusBtn","removeTestStatusSelect","removeTestStatusBtn","applyScenario","resetSource","saveNewProject","cancelAdd","exportScenario","registerSearch","addRegisterRow","newSourceStatus","addSourceStatusBtn","removeSourceStatusSelect","removeSourceStatusBtn","roleStandardList","setupProjectName","importRegisterBtn","importRegisterFile","savePlanBtn","loadPlanBtn","loadPlanFile","clearLocalDataBtn","autoSaveToggle","autoSaveStatus","importSummary","downloadDemoTemplateBtn","importValidationPanel","validationTitle","validationFile","validationStats","validationMessages","confirmImportBtn","cancelImportBtn","updateSourceBaselineBtn","downloadSourceBtn","sourceBaselineStatus","setImportAsSourceBtn"];
+const el = Object.fromEntries(ids.map(id=>[id,$(id)]));
+
+const DASHBOARD_STATE_VERSION=4;
+const AUTO_SAVE_KEY="project_resource_dashboard_autosave_v2";
+const AUTO_SAVE_ENABLED_KEY="project_resource_dashboard_autosave_enabled_v2";
+const SOURCE_BASELINE_KEY="project_resource_dashboard_source_baseline_v1";
+const STANDARD_REGISTER_HEADERS = ["Project","JIRA ID","Task Details","PM","Start Date","End Date","Effort MD","Resource 1","Role 1","Resource 2","Role 2","Resource 3","Role 3","Allocation / Resource","Test Status"];
+const DEMO_TEMPLATE_FILENAME = "Demo_Project_Register_Template.xlsx";
+const DEMO_TEMPLATE_BASE64 = "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";
+let stagedImport=null;
+let persistenceReady=false;
+let autoSaveTimer=null;
+
+function safeLocalStorage(){
+  try{
+    const key="__prd_test__";
+    localStorage.setItem(key,"1");
+    localStorage.removeItem(key);
+    return localStorage;
+  }catch(e){ return null; }
+}
+function setAutoSaveStatus(message,isError=false){
+  if(!el.autoSaveStatus) return;
+  el.autoSaveStatus.textContent=message;
+  el.autoSaveStatus.style.color=isError?"#b91c1c":"#64748b";
+}
+
+function updateSourceBaselineStatus(){
+  if(!el.sourceBaselineStatus) return;
+  const when=sourceBaselineUpdatedAt?` · updated ${new Date(sourceBaselineUpdatedAt).toLocaleString()}`:" · embedded default";
+  el.sourceBaselineStatus.textContent=`${sourceBaseline.length} source row(s)${when}. Reset to Source restores this baseline.`;
+}
+function persistSourceBaseline(){
+  const store=safeLocalStorage();
+  if(!store){ updateSourceBaselineStatus(); return false; }
+  try{
+    store.setItem(SOURCE_BASELINE_KEY,JSON.stringify({updatedAt:sourceBaselineUpdatedAt,records:sourceBaseline}));
+    updateSourceBaselineStatus();
+    return true;
+  }catch(e){
+    toast("Source baseline could not be saved in browser storage.");
+    return false;
+  }
+}
+function restoreSourceBaselineFromLocal(){
+  const store=safeLocalStorage();
+  if(!store){ updateSourceBaselineStatus(); return false; }
+  const raw=store.getItem(SOURCE_BASELINE_KEY);
+  if(!raw){ updateSourceBaselineStatus(); return false; }
+  try{
+    const saved=JSON.parse(raw);
+    const records=Array.isArray(saved)?saved:saved.records;
+    if(!Array.isArray(records)||!records.length) throw new Error("Invalid source baseline");
+    sourceBaseline=records.map(normalizeProjectRecord).map(p=>({...p,isSource:true,draft:false}));
+    sourceBaselineUpdatedAt=Array.isArray(saved)?null:(saved.updatedAt||null);
+    updateSourceBaselineStatus();
+    return true;
+  }catch(e){
+    store.removeItem(SOURCE_BASELINE_KEY);
+    sourceBaseline=structuredClone(SOURCE);
+    sourceBaselineUpdatedAt=null;
+    updateSourceBaselineStatus();
+    return false;
+  }
+}
+function sourceDuplicateKey(p){
+  const project=String(p.projectGroup||inferProjectGroup(p)||"").trim().toLowerCase();
+  const jira=String(p.projectId||"").trim().toLowerCase();
+  const task=String(p.projectName||"").trim().toLowerCase();
+  const start=String(p.start||"").trim();
+  const end=String(p.end||"").trim();
+  const effort=(p.effortMD===null||p.effortMD===undefined||p.effortMD==="")?"":String(Number(p.effortMD));
+  const resources=(p.resources||[]).map(r=>String(r||"").trim().toLowerCase()).filter(Boolean).join("~");
+  const roles=rolesForProject(p).slice(0,(p.resources||[]).length).map(r=>normalizeRole(r).toLowerCase()).join("~");
+  return `${project}|${jira}|${task}|${start}|${end}|${effort}|${resources}|${roles}`;
+}
+function validatePlanForSource(plan){
+  const errors=[];
+  if(!Array.isArray(plan)||!plan.length) return ["Source baseline cannot be empty."];
+  const seenExact=new Map();
+  plan.forEach((p,i)=>{
+    const n=i+1;
+    const project=String(p.projectGroup||inferProjectGroup(p)||"").trim();
+    const jira=String(p.projectId||"").trim();
+    const task=String(p.projectName||"").trim();
+    if(p.draft) errors.push(`Row ${n}: draft/unsaved register row cannot be used as Source.`);
+    if(!project) errors.push(`Row ${n}: Project is required.`);
+    if(!jira) errors.push(`Row ${n}: JIRA ID is required.`);
+    if(!task) errors.push(`Row ${n}: Task Details is required.`);
+    if(project&&jira&&task){
+      const exactKey=sourceDuplicateKey(p);
+      if(seenExact.has(exactKey)) errors.push(`Row ${n}: true duplicate of Row ${seenExact.get(exactKey)} (same Project, JIRA ID, Task Details, dates, effort and resource assignment).`);
+      else seenExact.set(exactKey,n);
+    }
+    if(p.start&&p.end&&parseDate(p.end)<parseDate(p.start)) errors.push(`Row ${n}: End Date is before Start Date.`);
+    if(p.effortMD!==null&&p.effortMD!==""&&(!Number.isFinite(Number(p.effortMD))||Number(p.effortMD)<0)) errors.push(`Row ${n}: Effort MD is invalid.`);
+    const resources=(p.resources||[]).filter(Boolean);
+    if(new Set(resources.map(r=>r.toLowerCase())).size!==resources.length) errors.push(`Row ${n}: same resource is assigned more than once.`);
+    (p.resourceRoles||[]).slice(0,resources.length).forEach((role,ri)=>{
+      if(role&&!ROLE_OPTIONS.includes(normalizeRole(role))) errors.push(`Row ${n}: Role ${ri+1} is invalid.`);
+    });
+  });
+  return errors;
+}
+function setSourceBaseline(records,{message="Source baseline updated."}={}){
+  sourceBaseline=records.map(normalizeProjectRecord).map((p,i)=>({...p,uid:p.uid||`SRC${i+1}`,isSource:true,draft:false}));
+  sourceBaselineUpdatedAt=new Date().toISOString();
+  persistSourceBaseline();
+  currentPlan=clone(sourceBaseline);
+  proposedPlan=clone(sourceBaseline);
+  addedResources=[];
+  customTestStatuses=[...new Set(sourceBaseline.map(p=>p.testStatus).filter(v=>v&&!DEFAULT_TEST_STATUSES.includes(v)))];
+  removedTestStatuses.clear();
+  customSourceStatuses=[...new Set(sourceBaseline.map(p=>p.status).filter(Boolean))];
+  removedSourceStatuses.clear();
+  pinnedRegisterUids.clear();
+  uidCounter=sourceBaseline.length+1;
+  refreshFilterOptions();
+  renderAll();
+  scheduleAutoSave(true);
+  updateSourceBaselineStatus();
+  toast(message);
+}
+function updateSourceBaselineFromProposed(){
+  const errors=validatePlanForSource(proposedPlan);
+  if(errors.length){
+    el.importSummary.innerHTML=`<b>Source update blocked:</b> ${errors.slice(0,5).map(escapeHtml).join(" · ")}${errors.length>5?` · ${errors.length-5} more issue(s)`:``}<br><span class="small">Repeated JIRA/task entries are allowed when their dates, effort or resource assignments are different.</span>`;
+    toast(`Source baseline not updated: ${errors.length} validation issue(s).`);
+    return;
+  }
+  if(!confirm(`Replace the Reset-to-Source baseline with the current Proposed Plan (${proposedPlan.length} rows)? This is the only action that changes the maintained Source baseline.`)) return;
+  setSourceBaseline(proposedPlan,{message:`Source baseline updated with ${proposedPlan.length} valid row(s).`});
+  el.importSummary.innerHTML=`<b>Source baseline updated.</b> Reset to Source will now restore these ${sourceBaseline.length} row(s).`;
+}
+function setStagedImportAsSource(){
+  if(!stagedImport||stagedImport.fatal||stagedImport.invalidRows.length||!stagedImport.validRecords.length) return;
+  if(!confirm(`Use all ${stagedImport.validRecords.length} validated rows as the new Reset-to-Source baseline?`)) return;
+  const records=stagedImport.validRecords.map(normalizeProjectRecord);
+  const name=stagedImport.sourceName;
+  cancelStagedImport();
+  setSourceBaseline(records,{message:`Source baseline replaced from ${name}.`});
+  el.importSummary.innerHTML=`<b>Source baseline replaced:</b> ${records.length} validated row(s) from ${escapeHtml(name)}. Reset to Source will restore this data.`;
+}
+function downloadCurrentSourceCsv(){
+  const rows=[STANDARD_REGISTER_HEADERS];
+  sourceBaseline.forEach(p=>{
+    const rr=rolesForProject(p);
+    rows.push([
+      p.projectGroup||inferProjectGroup(p),p.projectId||"",p.projectName||"",p.pm||"",
+      p.start||"",p.end||"",p.effortMD??"",
+      p.resources?.[0]||"",rr[0]||"",
+      p.resources?.[1]||"",rr[1]||"",
+      p.resources?.[2]||"",rr[2]||"",
+      "Auto",p.testStatus||"Not Started"
+    ]);
+  });
+  const csv="\uFEFF"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
+  const stamp=new Date().toISOString().slice(0,10);
+  downloadTextFile(`Current_Source_Project_Register_${stamp}.csv`,csv,"text/csv;charset=utf-8");
+  toast("Current Source Project Register downloaded.");
+}
+
+function dashboardConfigSnapshot(){
+  return {
+    scale:el.scale?.value||"week",
+    projectFilter:el.projectFilter?.value||"",
+    projectSearch:el.projectSearch?.value||"",
+    resourceFilter:el.resourceFilter?.value||"",
+    roleFilter:el.roleFilter?.value||"",
+    statusFilter:el.statusFilter?.value||"",
+    testStatusFilter:el.testStatusFilter?.value||"",
+    priorityFilter:el.priorityFilter?.value||"",
+    searchFilter:el.searchFilter?.value||"",
+    dateFrom:el.dateFrom?.value||"",
+    dateTo:el.dateTo?.value||"",
+    capacity:el.capacity?.value||"1",
+    effortModel:el.effortModel?.value||"split",
+    underThreshold:el.underThreshold?.value||"50",
+    highThreshold:el.highThreshold?.value||"80",
+    overThreshold:el.overThreshold?.value||"100",
+    ganttScope:el.ganttScope?.value||"full"
+  };
+}
+function buildDashboardState(){
+  return {
+    schemaVersion:DASHBOARD_STATE_VERSION,
+    dashboard:"Project Status and Resource Engagement Plan Dashboard",
+    savedAt:new Date().toISOString(),
+    sourceBaseline:clone(sourceBaseline),
+    sourceBaselineUpdatedAt,
+    currentPlan:clone(currentPlan),
+    proposedPlan:clone(proposedPlan),
+    addedResources:[...addedResources],
+    customTestStatuses:[...customTestStatuses],
+    removedTestStatuses:[...removedTestStatuses],
+    customSourceStatuses:[...customSourceStatuses],
+    removedSourceStatuses:[...removedSourceStatuses],
+    uidCounter,
+    config:dashboardConfigSnapshot()
+  };
+}
+function normalizeProjectRecord(p,index=0){
+  const rec=(p&&typeof p==="object")?clone(p):{};
+  rec.uid=String(rec.uid||`IMP${Date.now()}_${index}`);
+  rec.sourceRow=rec.sourceRow??null;
+  rec.projectId=String(rec.projectId||"").trim();
+  rec.projectName=String(rec.projectName||"").trim();
+  rec.pm=String(rec.pm||"").trim();
+  rec.effortMD=rec.effortMD===null||rec.effortMD===""||!Number.isFinite(Number(rec.effortMD))?null:Number(rec.effortMD);
+  rec.rawEffort=rec.rawEffort??rec.effortMD;
+  rec.start=normalizeDateValue(rec.start);
+  rec.end=normalizeDateValue(rec.end);
+  rec.devRelease=normalizeDateValue(rec.devRelease);
+  rec.uatRelease=normalizeDateValue(rec.uatRelease);
+  rec.plannedGoLive=normalizeDateValue(rec.plannedGoLive);
+  rec.resources=Array.isArray(rec.resources)?rec.resources.map(v=>String(v||"").trim()).filter(Boolean).slice(0,3):[];
+  rec.resourceRoles=Array.isArray(rec.resourceRoles)?rec.resourceRoles.map(normalizeRole).slice(0,rec.resources.length):rec.resources.map(()=>"SQA Engineer");
+  while(rec.resourceRoles.length<rec.resources.length) rec.resourceRoles.push("SQA Engineer");
+  rec.role=normalizeRole(rec.role||rec.resourceRoles[0]||"SQA Engineer");
+  rec.priority=normalizePriority(rec.priority);
+  rec.status=String(rec.status||"").trim();
+  rec.testStatus=String(rec.testStatus||rec.status||"Not Started").trim();
+  rec.remarks=String(rec.remarks||"").trim();
+  rec.projectGroup=String(rec.projectGroup||inferProjectGroup(rec)).trim()||"HRMS";
+  rec.isSource=!!rec.isSource;
+  rec.draft=!!rec.draft;
+  return rec;
+}
+function applyConfigSnapshot(cfg={}){
+  const fields=["scale","projectSearch","searchFilter","dateFrom","dateTo","capacity","effortModel","underThreshold","highThreshold","overThreshold","ganttScope"];
+  fields.forEach(id=>{ if(el[id]&&cfg[id]!==undefined) el[id].value=String(cfg[id]??""); });
+  // Select-backed filters are applied after options are refreshed.
+  refreshFilterOptions();
+  ["projectFilter","resourceFilter","roleFilter","statusFilter","testStatusFilter","priorityFilter"].forEach(id=>{
+    const v=cfg[id];
+    if(el[id]&&v!==undefined&&[...el[id].options].some(o=>o.value===String(v))) el[id].value=String(v);
+  });
+}
+function applyDashboardState(state,{fromAutoSave=false}={}){
+  if(!state||typeof state!=="object") throw new Error("Invalid dashboard plan file.");
+  if(!fromAutoSave&&Array.isArray(state.sourceBaseline)&&state.sourceBaseline.length){
+    setAutoSaveStatus("Plan loaded. Its Source backup was not applied automatically; use Update Source Baseline if you want to replace Reset-to-Source data.");
+  }
+  if(!Array.isArray(state.proposedPlan)&&!Array.isArray(state.currentPlan)) throw new Error("Plan file does not contain project data.");
+  const proposed=(state.proposedPlan||state.currentPlan||[]).map(normalizeProjectRecord);
+  const current=(state.currentPlan||state.proposedPlan||[]).map(normalizeProjectRecord);
+  proposedPlan=proposed;
+  currentPlan=current;
+  addedResources=Array.isArray(state.addedResources)?state.addedResources.map(String).filter(Boolean):[];
+  customTestStatuses=Array.isArray(state.customTestStatuses)?state.customTestStatuses.map(String).filter(Boolean):[];
+  removedTestStatuses=new Set(Array.isArray(state.removedTestStatuses)?state.removedTestStatuses:[]);
+  customSourceStatuses=Array.isArray(state.customSourceStatuses)?state.customSourceStatuses.map(String).filter(Boolean):[];
+  removedSourceStatuses=new Set(Array.isArray(state.removedSourceStatuses)?state.removedSourceStatuses:[]);
+  uidCounter=Math.max(Number(state.uidCounter)||1,proposedPlan.length+1);
+  pinnedRegisterUids.clear();
+  applyConfigSnapshot(state.config||{});
+  renderAll(true);
+  if(!fromAutoSave) scheduleAutoSave(true);
+}
+function autoSaveEnabled(){
+  return !!el.autoSaveToggle?.checked;
+}
+function scheduleAutoSave(immediate=false){
+  if(!persistenceReady||!autoSaveEnabled()) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer=setTimeout(saveAutoState,immediate?0:350);
+}
+function saveAutoState(){
+  const store=safeLocalStorage();
+  if(!store){ setAutoSaveStatus("Auto-save unavailable in this browser.",true); return; }
+  try{
+    store.setItem(AUTO_SAVE_KEY,JSON.stringify(buildDashboardState()));
+    store.setItem(AUTO_SAVE_ENABLED_KEY,"1");
+    setAutoSaveStatus(`Auto-saved ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}.`);
+  }catch(e){
+    setAutoSaveStatus("Auto-save failed: browser storage is unavailable or full.",true);
+  }
+}
+function restoreAutoState(){
+  const store=safeLocalStorage();
+  if(!store){ el.autoSaveToggle.checked=false; el.autoSaveToggle.disabled=true; setAutoSaveStatus("Browser local storage is unavailable.",true); return false; }
+  const enabled=store.getItem(AUTO_SAVE_ENABLED_KEY)!=="0";
+  el.autoSaveToggle.checked=enabled;
+  if(!enabled){ setAutoSaveStatus("Auto-save is off."); return false; }
+  const raw=store.getItem(AUTO_SAVE_KEY);
+  if(!raw){ setAutoSaveStatus("Auto-save is on. No local plan saved yet."); return false; }
+  try{
+    const state=JSON.parse(raw);
+    applyDashboardState(state,{fromAutoSave:true});
+    const when=state.savedAt?new Date(state.savedAt).toLocaleString():"previous session";
+    setAutoSaveStatus(`Restored local plan saved ${when}.`);
+    return true;
+  }catch(e){
+    store.removeItem(AUTO_SAVE_KEY);
+    setAutoSaveStatus("Stored local plan was invalid and was ignored.",true);
+    return false;
+  }
+}
+function downloadTextFile(name,text,type){
+  const blob=new Blob([text],{type:type||"application/octet-stream"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+function downloadDemoProjectRegister(){
+  try{
+    const binary=atob(DEMO_TEMPLATE_BASE64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    const blob=new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=DEMO_TEMPLATE_FILENAME;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1200);
+    toast("Demo Project Register template downloaded.");
+  }catch(e){ toast(`Template download failed: ${e.message}`); }
+}
+
+function savePlanJson(){
+  const state=buildDashboardState();
+  const stamp=new Date().toISOString().slice(0,10);
+  downloadTextFile(`Project_Resource_Plan_${stamp}.json`,JSON.stringify(state,null,2),"application/json;charset=utf-8");
+  toast("Dashboard plan saved as JSON.");
+}
+async function loadPlanJsonFile(file){
+  if(!file) return;
+  try{
+    const state=JSON.parse(await file.text());
+    applyDashboardState(state);
+    setAutoSaveStatus("Loaded JSON plan and saved it as the working browser plan.");
+    toast(`Plan loaded: ${file.name}`);
+  }catch(e){
+    toast(`Unable to load plan: ${e.message}`);
+  }finally{
+    el.loadPlanFile.value="";
+  }
+}
+function clearLocalDashboardData(){
+  if(!confirm("Clear browser-saved working data and return to the maintained Source baseline? The Source baseline itself will not be deleted.")) return;
+  const store=safeLocalStorage();
+  if(store){ store.removeItem(AUTO_SAVE_KEY); store.removeItem(AUTO_SAVE_ENABLED_KEY); }
+  el.autoSaveToggle.checked=true;
+  currentPlan=clone(sourceBaseline);
+  proposedPlan=clone(sourceBaseline);
+  addedResources=[];
+  customTestStatuses=[];
+  removedTestStatuses.clear();
+  customSourceStatuses=[];
+  removedSourceStatuses.clear();
+  pinnedRegisterUids.clear();
+  refreshFilterOptions();
+  renderAll();
+  setAutoSaveStatus("Local working data cleared. Dashboard restored to the maintained Source baseline.");
+  toast("Local browser data cleared.");
+}
+
+/* ---------- Import Project Register ---------- */
+function headerKey(v){ return String(v??"").replace(/^\uFEFF/,"").trim().toLowerCase().replace(/[^a-z0-9]+/g,""); }
+function firstValue(obj,aliases){
+  for(const a of aliases){
+    const k=headerKey(a);
+    if(Object.prototype.hasOwnProperty.call(obj,k) && obj[k]!=="" && obj[k]!==null && obj[k]!==undefined) return obj[k];
+  }
+  return "";
+}
+function normalizeRole(v){
+  const raw=String(v??"").trim();
+  if(!raw||raw==="QA"||raw==="SQA") return "SQA Engineer";
+  if(raw==="Technical Lead") return "Technical Lead, SQA";
+  const hit=ROLE_OPTIONS.find(x=>x.toLowerCase()===raw.toLowerCase());
+  return hit||raw;
+}
+function normalizePriority(v){
+  const raw=String(v??"").trim();
+  if(!raw) return "Unspecified";
+  const hit=PRIORITY_OPTIONS.find(x=>x.toLowerCase()===raw.toLowerCase());
+  return hit||"Unspecified";
+}
+function excelSerialToIso(n){
+  if(!Number.isFinite(Number(n))) return null;
+  const days=Math.floor(Number(n));
+  if(days<1||days>100000) return null;
+  const epoch=Date.UTC(1899,11,30);
+  const dt=new Date(epoch+days*86400000);
+  return dt.toISOString().slice(0,10);
+}
+function normalizeDateValue(v){
+  if(v===null||v===undefined||v==="") return null;
+  if(typeof v==="number") return excelSerialToIso(v);
+  const raw=String(v).trim();
+  if(!raw||/^tbd$/i.test(raw)||/^n\/?a$/i.test(raw)) return null;
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0,10);
+  if(/^\d+(\.\d+)?$/.test(raw)){
+    const iso=excelSerialToIso(Number(raw)); if(iso) return iso;
+  }
+  let m=raw.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if(m){
+    const day=Number(m[1]),mon=Number(m[2]),yr=Number(m[3]);
+    if(mon>=1&&mon<=12&&day>=1&&day<=31) return `${yr}-${String(mon).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+  }
+  const dt=new Date(raw);
+  if(!Number.isNaN(dt.getTime())) return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+  return null;
+}
+function normalizeEffort(v){
+  if(v===null||v===undefined||v==="") return null;
+  if(typeof v==="number") return Number.isFinite(v)?v:null;
+  const raw=String(v).trim().toLowerCase();
+  const h=raw.match(/^([0-9.]+)\s*h(?:ours?)?$/);
+  if(h) return Number(h[1])/8;
+  const n=Number(raw.replace(/,/g,""));
+  return Number.isFinite(n)?n:null;
+}
+function validateStandardImport(headers,rows,sourceName="Imported file"){
+  const errors=[];const warnings=[];const validRecords=[];const invalidRows=[];
+  const actual=headers.map(v=>String(v??"").replace(/^\uFEFF/,"").trim());
+  const exact=actual.length===STANDARD_REGISTER_HEADERS.length && actual.every((v,i)=>v===STANDARD_REGISTER_HEADERS[i]);
+  if(!exact){
+    const missing=STANDARD_REGISTER_HEADERS.filter(h=>!actual.includes(h));
+    const unexpected=actual.filter(h=>h&&!STANDARD_REGISTER_HEADERS.includes(h));
+    if(missing.length) errors.push(`Missing required column(s): ${missing.join(", ")}.`);
+    if(unexpected.length) errors.push(`Unsupported column(s): ${unexpected.join(", ")}.`);
+    if(!missing.length&&!unexpected.length) errors.push("Column order does not match the standard template. Use the downloaded Demo Project Register template.");
+    if(actual.length!==STANDARD_REGISTER_HEADERS.length) errors.push(`Expected ${STANDARD_REGISTER_HEADERS.length} columns but found ${actual.length}.`);
+    return {sourceName,totalRows:rows.length,validRecords,invalidRows,errors,warnings,fatal:true};
+  }
+
+  const seenBase=new Map();
+  const seenExact=new Map();
+  const statusOptions=allTestStatuses();
+  rows.forEach((row,idx)=>{
+    const excelRow=idx+2;
+    const vals={};STANDARD_REGISTER_HEADERS.forEach((h,i)=>vals[h]=row[i]??"");
+    const isBlank=STANDARD_REGISTER_HEADERS.every(h=>String(vals[h]??"").trim()==="");
+    if(isBlank) return;
+    const rowErrors=[];const rowWarnings=[];
+    const project=String(vals["Project"]??"").trim();
+    const jira=String(vals["JIRA ID"]??"").trim();
+    const task=String(vals["Task Details"]??"").trim();
+    const pm=String(vals["PM"]??"").trim();
+    const startRaw=vals["Start Date"],endRaw=vals["End Date"],effortRaw=vals["Effort MD"];
+    const allocationRaw=String(vals["Allocation / Resource"]??"").trim();
+    const testStatus=String(vals["Test Status"]??"").trim();
+
+    if(!project) rowErrors.push("Project is required.");
+    else if(!PROJECT_OPTIONS.includes(project)) rowErrors.push(`Project \"${project}\" is not an allowed Project value.`);
+    if(!jira) rowErrors.push("JIRA ID is required.");
+    if(!task) rowErrors.push("Task Details is required.");
+    if(!pm) rowWarnings.push("PM is blank.");
+
+    const start=normalizeDateValue(startRaw),end=normalizeDateValue(endRaw);
+    if(String(startRaw??"").trim()&&!start) rowErrors.push("Start Date is invalid. Use yyyy-mm-dd or a valid Excel date.");
+    if(String(endRaw??"").trim()&&!end) rowErrors.push("End Date is invalid. Use yyyy-mm-dd or a valid Excel date.");
+    if(start&&end&&parseDate(end)<parseDate(start)) rowErrors.push("End Date cannot be before Start Date.");
+    if((start&&!end)||(!start&&end)) rowWarnings.push("Only one of Start Date / End Date is populated; load forecast will remain incomplete.");
+
+    const effort=normalizeEffort(effortRaw);
+    if(String(effortRaw??"").trim()&&effort===null) rowErrors.push("Effort MD is invalid.");
+    if(effort!==null&&effort<0) rowErrors.push("Effort MD cannot be negative.");
+    if(effort===null) rowWarnings.push("Effort MD is blank; allocation cannot be forecast until effort is entered.");
+
+    if(allocationRaw && allocationRaw.toLowerCase()!=="auto") rowErrors.push('Allocation / Resource must be blank or "Auto"; it is calculated by the dashboard.');
+
+    const resources=[];const resourceRoles=[];
+    for(let slot=1;slot<=3;slot++){
+      const res=String(vals[`Resource ${slot}`]??"").trim();
+      const role=String(vals[`Role ${slot}`]??"").trim();
+      if(role&&!res) rowErrors.push(`Role ${slot} is populated without Resource ${slot}.`);
+      if(res&&!role) rowErrors.push(`Role ${slot} is required when Resource ${slot} is populated.`);
+      if(role&&!ROLE_OPTIONS.includes(normalizeRole(role))) rowErrors.push(`Role ${slot} \"${role}\" is not a supported role.`);
+      if(res){ resources.push(res);resourceRoles.push(normalizeRole(role||"SQA Engineer")); }
+    }
+    const lowerResources=resources.map(x=>x.toLowerCase());
+    if(new Set(lowerResources).size!==lowerResources.length) rowErrors.push("The same resource is assigned more than once in this row.");
+    if(!resources.length) rowWarnings.push("No QA resource is assigned; the row will not contribute to resource load until assigned.");
+
+    const finalStatus=testStatus||"Not Started";
+    if(testStatus&&!statusOptions.some(x=>x.toLowerCase()===testStatus.toLowerCase())) rowErrors.push(`Test Status \"${testStatus}\" is not configured in the dashboard.`);
+
+    if(project&&jira&&task){
+      const baseKey=`${project}|${jira}|${task}`.toLowerCase();
+      const exactKey=[
+        baseKey,start||"",end||"",effort===null?"":String(effort),
+        resources.map(r=>r.toLowerCase()).join("~"),
+        resourceRoles.map(r=>normalizeRole(r).toLowerCase()).join("~")
+      ].join("|");
+      if(seenExact.has(exactKey)){
+        rowErrors.push(`True duplicate of Row ${seenExact.get(exactKey)}: same Project, JIRA ID, Task Details, dates, effort and resource assignment.`);
+      }else{
+        seenExact.set(exactKey,excelRow);
+        if(seenBase.has(baseKey)) rowWarnings.push(`Repeated JIRA/task also appears on Row ${seenBase.get(baseKey)}, but planning details differ; both rows are allowed.`);
+        else seenBase.set(baseKey,excelRow);
+      }
+    }
+
+    if(rowErrors.length){
+      invalidRows.push({row:excelRow,errors:rowErrors,warnings:rowWarnings});
+      rowErrors.forEach(x=>errors.push(`Row ${excelRow}: ${x}`));
+      rowWarnings.forEach(x=>warnings.push(`Row ${excelRow}: ${x}`));
+      return;
+    }
+    rowWarnings.forEach(x=>warnings.push(`Row ${excelRow}: ${x}`));
+    validRecords.push(normalizeProjectRecord({
+      uid:`IMP${Date.now()}_${idx+1}`,sourceRow:null,projectGroup:project,projectId:jira,projectName:task,pm,
+      effortMD:effort,rawEffort:effortRaw,start,end,resources,resourceRoles,
+      role:resourceRoles[0]||"SQA Engineer",priority:"Unspecified",status:"",testStatus:statusOptions.find(x=>x.toLowerCase()===finalStatus.toLowerCase())||finalStatus,
+      remarks:`Imported from ${sourceName}`,isSource:false,draft:false
+    },idx));
+  });
+  if(!validRecords.length&&!errors.length) errors.push("No project rows were found after the header row.");
+  return {sourceName,totalRows:rows.filter(r=>r.some(v=>String(v??"").trim()!=="")).length,validRecords,invalidRows,errors,warnings,fatal:false};
+}
+
+function renderImportValidation(result){
+  stagedImport=result;
+  el.importValidationPanel.classList.add("show");
+  el.validationTitle.textContent="Project Register validation";
+  el.validationFile.textContent=result.sourceName;
+  const valid=result.validRecords.length,invalid=result.invalidRows.length;
+  el.validationStats.innerHTML=`<span class="vstat valid">${valid} valid</span><span class="vstat error">${invalid} invalid</span><span class="vstat warn">${result.warnings.length} warning(s)</span>`;
+  const messages=[];
+  result.errors.slice(0,25).forEach(x=>messages.push(`<div class="validation-item error">${escapeHtml(x)}</div>`));
+  result.warnings.slice(0,20).forEach(x=>messages.push(`<div class="validation-item warn">${escapeHtml(x)}</div>`));
+  if(!messages.length) messages.push('<div class="validation-item">Validation passed. The file matches the standard template.</div>');
+  const hidden=result.errors.length+result.warnings.length-(Math.min(25,result.errors.length)+Math.min(20,result.warnings.length));
+  if(hidden>0) messages.push(`<div class="validation-item">${hidden} additional message(s) not shown.</div>`);
+  el.validationMessages.innerHTML=messages.join("");
+  el.confirmImportBtn.disabled=result.fatal||valid===0;
+  el.confirmImportBtn.textContent=valid?`Import ${valid} Valid Row${valid===1?"":"s"}`:"Import Valid Rows";
+  el.setImportAsSourceBtn.disabled=result.fatal||valid===0||invalid>0;
+  el.setImportAsSourceBtn.textContent=invalid===0&&valid?`Set ${valid} Valid Row${valid===1?"":"s"} as Source`:"Set Valid Rows as Source";
+  el.importSummary.innerHTML=result.fatal
+    ? '<b>Validation failed.</b> Download the standard template and correct the file structure before importing.'
+    : `<b>Validation complete:</b> ${valid} valid row(s), ${invalid} invalid row(s). Review the messages below before importing.`;
+}
+function cancelStagedImport(){
+  stagedImport=null;el.importValidationPanel.classList.remove("show");el.importRegisterFile.value="";
+  el.importSummary.innerHTML='<b>Recommended workflow:</b> Download Template → replace demo rows with actual data → Import → review validation → Import Valid Rows. When the file has no invalid rows, use <b>Set Valid Rows as Source</b> so Reset to Source restores that maintained baseline.';
+}
+function applyStagedImport(){
+  if(!stagedImport||!stagedImport.validRecords.length) return;
+  const records=stagedImport.validRecords.map(normalizeProjectRecord);
+  currentPlan=records;proposedPlan=clone(records);addedResources=[];
+  customTestStatuses=[...new Set(proposedPlan.map(p=>p.testStatus).filter(v=>v&&!DEFAULT_TEST_STATUSES.includes(v)))];
+  removedTestStatuses.clear();customSourceStatuses=[];removedSourceStatuses.clear();
+  uidCounter=proposedPlan.length+1;pinnedRegisterUids.clear();
+  refreshFilterOptions();renderAll();scheduleAutoSave(true);
+  const count=records.length,name=stagedImport.sourceName;
+  cancelStagedImport();
+  el.importSummary.innerHTML=`<b>Imported ${count} valid row(s)</b> from ${escapeHtml(name)}. Dashboard and forecasts were refreshed.`;
+  toast(`${count} valid Project Register row(s) imported.`);
+}
+
+function parseCsvText(text){
+  text=String(text||"").replace(/^\uFEFF/,"");
+  const rows=[];let row=[],field="",quoted=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(quoted){
+      if(ch==='"'&&text[i+1]==='"'){field+='"';i++;}
+      else if(ch==='"') quoted=false;
+      else field+=ch;
+    }else{
+      if(ch==='"') quoted=true;
+      else if(ch===","){row.push(field);field="";}
+      else if(ch==="\n"){row.push(field);rows.push(row);row=[];field="";}
+      else if(ch!=="\r") field+=ch;
+    }
+  }
+  if(field!==""||row.length){row.push(field);rows.push(row);}
+  return rows.filter(r=>r.some(v=>String(v??"").trim()!==""));
+}
+function readU16(dv,o){return dv.getUint16(o,true);}
+function readU32(dv,o){return dv.getUint32(o,true);}
+async function unzipXlsx(buffer){
+  const bytes=new Uint8Array(buffer),dv=new DataView(buffer);
+  let eocd=-1;
+  for(let i=bytes.length-22;i>=Math.max(0,bytes.length-66000);i--){
+    if(readU32(dv,i)===0x06054b50){eocd=i;break;}
+  }
+  if(eocd<0) throw new Error("Invalid XLSX/ZIP file.");
+  const entries=readU16(dv,eocd+10),cdOffset=readU32(dv,eocd+16);
+  const files=new Map();let p=cdOffset;
+  const decoder=new TextDecoder("utf-8");
+  for(let n=0;n<entries;n++){
+    if(readU32(dv,p)!==0x02014b50) break;
+    const method=readU16(dv,p+10),compSize=readU32(dv,p+20);
+    const nameLen=readU16(dv,p+28),extraLen=readU16(dv,p+30),commentLen=readU16(dv,p+32),local=readU32(dv,p+42);
+    const name=decoder.decode(bytes.slice(p+46,p+46+nameLen));
+    const ln=readU16(dv,local+26),le=readU16(dv,local+28),start=local+30+ln+le;
+    const compressed=bytes.slice(start,start+compSize);
+    files.set(name,{method,compressed});
+    p+=46+nameLen+extraLen+commentLen;
+  }
+  async function text(name){
+    const f=files.get(name); if(!f) return null;
+    let data;
+    if(f.method===0) data=f.compressed;
+    else if(f.method===8){
+      if(typeof DecompressionStream==="undefined") throw new Error("Excel import requires a modern Chrome or Edge browser.");
+      const ds=new DecompressionStream("deflate-raw");
+      data=new Uint8Array(await new Response(new Blob([f.compressed]).stream().pipeThrough(ds)).arrayBuffer());
+    }else throw new Error(`Unsupported XLSX compression method ${f.method}.`);
+    return decoder.decode(data);
+  }
+  return {files,text};
+}
+function xmlLocalElements(doc,name){return [...doc.getElementsByTagNameNS("*",name)];}
+function colIndexFromRef(ref){
+  const m=String(ref||"").match(/^([A-Z]+)/i); if(!m) return 0;
+  let n=0; for(const ch of m[1].toUpperCase()) n=n*26+(ch.charCodeAt(0)-64);
+  return n-1;
+}
+async function parseXlsxArrayBuffer(buffer){
+  const zip=await unzipXlsx(buffer);
+  const parser=new DOMParser();
+  const wbText=await zip.text("xl/workbook.xml");
+  const relText=await zip.text("xl/_rels/workbook.xml.rels");
+  if(!wbText||!relText) throw new Error("XLSX workbook metadata is missing.");
+  const wb=parser.parseFromString(wbText,"application/xml");
+  const rel=parser.parseFromString(relText,"application/xml");
+  const rels=new Map(xmlLocalElements(rel,"Relationship").map(x=>[x.getAttribute("Id"),x.getAttribute("Target")]));
+  const sharedText=await zip.text("xl/sharedStrings.xml");
+  let shared=[];
+  if(sharedText){
+    const sd=parser.parseFromString(sharedText,"application/xml");
+    shared=xmlLocalElements(sd,"si").map(si=>xmlLocalElements(si,"t").map(t=>t.textContent||"").join(""));
+  }
+  const sheets=xmlLocalElements(wb,"sheet");
+  let best=null;
+  const recognized=new Set(["jiraid","taskdetails","summary","pm","mandays","manday","effortmd","startdate","enddate","qaresource1","resource1","project"]);
+  for(const sh of sheets){
+    const rid=sh.getAttribute("r:id")||sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id");
+    let target=rels.get(rid); if(!target) continue;
+    target=target.replace(/^\/+/,"");
+    const path=target.startsWith("xl/")?target:`xl/${target}`;
+    const xml=await zip.text(path); if(!xml) continue;
+    const doc=parser.parseFromString(xml,"application/xml");
+    const rows=[];
+    for(const r of xmlLocalElements(doc,"row")){
+      const arr=[];
+      for(const c of xmlLocalElements(r,"c")){
+        const idx=colIndexFromRef(c.getAttribute("r"));
+        const type=c.getAttribute("t")||"";
+        let val="";
+        if(type==="inlineStr"){
+          val=xmlLocalElements(c,"t").map(t=>t.textContent||"").join("");
+        }else{
+          const v=xmlLocalElements(c,"v")[0]?.textContent??"";
+          if(type==="s") val=shared[Number(v)]??"";
+          else if(type==="b") val=v==="1"?"TRUE":"FALSE";
+          else val=v;
+        }
+        arr[idx]=val;
+      }
+      rows.push(arr);
+    }
+    const nonempty=rows.filter(r=>r.some(v=>String(v??"").trim()!==""));
+    if(!nonempty.length) continue;
+    let headerIndex=0,bestScore=-1;
+    for(let i=0;i<Math.min(15,nonempty.length);i++){
+      const score=nonempty[i].reduce((sum,v)=>sum+(recognized.has(headerKey(v))?1:0),0);
+      if(score>bestScore){bestScore=score;headerIndex=i;}
+    }
+    const candidate={name:sh.getAttribute("name")||"Sheet",headers:nonempty[headerIndex],rows:nonempty.slice(headerIndex+1),score:bestScore};
+    if(!best||candidate.score>best.score) best=candidate;
+  }
+  if(!best) throw new Error("No readable worksheet was found.");
+  return best;
+}
+async function handleImportRegister(file){
+  if(!file) return;
+  cancelStagedImport();
+  try{
+    let parsed;const ext=(file.name.split(".").pop()||"").toLowerCase();
+    if(ext==="csv"){
+      const rows=parseCsvText(await file.text());
+      if(rows.length<2) throw new Error("CSV does not contain data rows.");
+      parsed={name:file.name,headers:rows[0],rows:rows.slice(1)};
+    }else if(ext==="xlsx"){
+      const x=await parseXlsxArrayBuffer(await file.arrayBuffer());
+      parsed={name:`${file.name} · ${x.name}`,headers:x.headers,rows:x.rows};
+    }else throw new Error("Choose an .xlsx or .csv file.");
+    const result=validateStandardImport(parsed.headers,parsed.rows,parsed.name);
+    renderImportValidation(result);
+    toast(result.fatal?"Import file failed structural validation.":"Validation complete. Review before importing.");
+  }catch(e){
+    const result={sourceName:file.name,totalRows:0,validRecords:[],invalidRows:[],errors:[e.message],warnings:[],fatal:true};
+    renderImportValidation(result);toast(`Import validation failed: ${e.message}`);
+  }finally{ el.importRegisterFile.value=""; }
+}
+
+function clone(x){ return structuredClone(x); }
+function parseDate(s){ return s ? new Date(s+"T00:00:00") : null; }
+function iso(dt){ return dt.toISOString().slice(0,10); }
+function fmtDate(s){
+  if(!s) return "—";
+  return parseDate(s).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"2-digit"});
+}
+function isWorkday(dt){ const day=dt.getDay(); return day!==5 && day!==6; }
+function workdaysBetween(start,end){
+  const a=parseDate(start), b=parseDate(end), out=[];
+  if(!a||!b||a>b) return out;
+  for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1)) if(isWorkday(d)) out.push(new Date(d));
+  return out;
+}
+function allResources(plan=proposedPlan){
+  return [...new Set([...(plan||[]).flatMap(p=>p.resources||[]),...addedResources].filter(Boolean))].sort();
+}
+function priorityLabel(v){
+  const raw=String(v??"").trim();
+  const match=PRIORITY_OPTIONS.find(x=>x.toLowerCase()===raw.toLowerCase());
+  return match||"Unspecified";
+}
+function projectLabel(p){ return `${p.projectId || "(No ID)"} — ${p.projectName || "(Untitled)"}`; }
+function rolesForProject(p){
+  const roles=Array.isArray(p.resourceRoles)?p.resourceRoles:[];
+  return (p.resources||[]).map((_,i)=>roles[i]||"SQA Engineer");
+}
+function allTestStatuses(plan=proposedPlan){
+  return [...new Set([...DEFAULT_TEST_STATUSES,...customTestStatuses,...plan.map(p=>p.testStatus).filter(Boolean)])]
+    .filter(v=>!removedTestStatuses.has(v));
+}
+function allSourceStatuses(plan=proposedPlan){
+  return [...new Set(["Unspecified",...customSourceStatuses,...plan.map(p=>p.status||"Unspecified")])]
+    .filter(v=>!removedSourceStatuses.has(v));
+}
+function projectGroupOptions(selected){
+  const vals=[...new Set([...PROJECT_OPTIONS,...proposedPlan.map(p=>p.projectGroup||inferProjectGroup(p)).filter(Boolean),selected].filter(Boolean))];
+  return vals.map(v=>`<option value="${escapeAttr(v)}" ${v===selected?"selected":""}>${escapeHtml(v)}</option>`).join("");
+}
+function roleOptions(selected){
+  const vals=[...new Set([...ROLE_OPTIONS,selected].filter(Boolean))];
+  return vals.map(v=>`<option value="${escapeAttr(v)}" ${v===selected?"selected":""}>${escapeHtml(v)}</option>`).join("");
+}
+function testStatusOptions(selected){
+  const vals=[...new Set([...allTestStatuses(),selected].filter(Boolean))];
+  return vals.map(v=>`<option value="${escapeAttr(v)}" ${v===selected?"selected":""}>${escapeHtml(v)}</option>`).join("");
+}
+function clamp(n,min,max){ n=Number(n); return Number.isFinite(n)?Math.min(max,Math.max(min,n)):min; }
+function getConfig(){
+  let under=clamp(el.underThreshold.value,1,99);
+  let high=clamp(el.highThreshold.value,under+1,100);
+  let over=clamp(el.overThreshold.value,high,300);
+  el.underThreshold.value=under; el.highThreshold.value=high; el.overThreshold.value=over;
+  return {
+    capacity: clamp(el.capacity.value,.1,3),
+    effortModel: el.effortModel.value,
+    under, high, over,
+    scale: el.scale.value
+  };
+}
+function loadClass(v,cfg){
+  if(!v || v<=0) return "c-none";
+  if(v<cfg.under) return "c-available";
+  if(v<cfg.high) return "c-moderate";
+  if(v<=cfg.over) return "c-high";
+  return "c-over";
+}
+function loadLabel(v,cfg){
+  if(!v || v<=0) return "No allocation";
+  if(v<cfg.under) return "Available";
+  if(v<cfg.high) return "Moderate";
+  if(v<=cfg.over) return "High";
+  return "Overloaded";
+}
+function barColor(v,cfg){
+  if(!v || v<=0) return "#cbd5e1";
+  if(v<cfg.under) return "#0f766e";
+  if(v<cfg.high) return "#2563eb";
+  if(v<=cfg.over) return "#d97706";
+  return "#dc2626";
+}
+function same(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+
+function hasScenarioChanges(){
+  return !same(currentPlan,proposedPlan);
+}
+function sourceChanged(){
+  return !same(SOURCE,currentPlan);
+}
+function changedUids(){
+  const cur=new Map(currentPlan.map(p=>[p.uid,p]));
+  const changed=new Set();
+  proposedPlan.forEach(p=>{
+    const c=cur.get(p.uid);
+    if(!c || !same(c,p)) changed.add(p.uid);
+  });
+  cur.forEach((p,uid)=>{ if(!proposedPlan.some(x=>x.uid===uid)) changed.add(uid); });
+  return changed;
+}
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"),1800);
+}
+
+function matchesFilters(p){
+  const pf=el.projectFilter.value, projectQ=el.projectSearch.value.trim().toLowerCase(), rf=el.resourceFilter.value, role=el.roleFilter.value, sf=el.statusFilter.value, ts=el.testStatusFilter.value, pri=el.priorityFilter.value;
+  const q=el.searchFilter.value.trim().toLowerCase();
+  const df=el.dateFrom.value, dt=el.dateTo.value;
+  if(pf && p.projectGroup!==pf) return false;
+  if(projectQ && ![p.projectId,p.projectName].join(" ").toLowerCase().includes(projectQ)) return false;
+  if(rf && !p.resources.includes(rf)) return false;
+  if(role && !rolesForProject(p).includes(role)) return false;
+  if(sf && (p.status||"Unspecified")!==sf) return false;
+  if(ts && p.testStatus!==ts) return false;
+  if(pri && priorityLabel(p.priority)!==pri) return false;
+  if(q && ![p.projectId,p.projectName,p.pm,p.status,p.testStatus,p.priority,p.remarks,...p.resources,...rolesForProject(p)].join(" ").toLowerCase().includes(q)) return false;
+  if(df || dt){
+    if(!p.start || !p.end) return false;
+    const start=parseDate(p.start), end=parseDate(p.end);
+    if(df && end<parseDate(df)) return false;
+    if(dt && start>parseDate(dt)) return false;
+  }
+  return true;
+}
+
+function filteredPlan(plan){
+  return plan.filter(matchesFilters);
+}
+function focusedResourceNames(names){
+  const selected=el.resourceFilter.value;
+  const list=[...names];
+  return selected?list.filter(r=>r===selected):list;
+}
+function focusedMetricEntries(metrics){
+  return Object.entries(metrics).filter(([r])=>!el.resourceFilter.value||r===el.resourceFilter.value);
+}
+function forecastHorizon(plan){
+  const dated=plan.filter(p=>p.start&&p.end);
+  let start = el.dateFrom.value ? parseDate(el.dateFrom.value) : new Date(TODAY);
+  let end = el.dateTo.value ? parseDate(el.dateTo.value) : null;
+  if(!end){
+    const futureEnds=dated.map(p=>parseDate(p.end)).filter(d=>d>=start);
+    end=futureEnds.length ? new Date(Math.max(...futureEnds)) : new Date(start);
+    if(end.getTime()===start.getTime()) end.setDate(end.getDate()+30);
+  }
+  if(end<start){ const tmp=start; start=end; end=tmp; }
+  return {start,end};
+}
+
+function registerViewPlan(plan){
+  // Non-date filters for full-register involvement.
+  const pf=el.projectFilter.value, projectQ=el.projectSearch.value.trim().toLowerCase(), rf=el.resourceFilter.value, role=el.roleFilter.value, sf=el.statusFilter.value, ts=el.testStatusFilter.value, pri=el.priorityFilter.value;
+  const q=el.searchFilter.value.trim().toLowerCase();
+  return plan.filter(p=>{
+    if(pf && p.projectGroup!==pf) return false;
+    if(projectQ && ![p.projectId,p.projectName].join(" ").toLowerCase().includes(projectQ)) return false;
+    if(rf && !p.resources.includes(rf)) return false;
+    if(role && !rolesForProject(p).includes(role)) return false;
+    if(sf && (p.status||"Unspecified")!==sf) return false;
+    if(ts && p.testStatus!==ts) return false;
+    if(pri && priorityLabel(p.priority)!==pri) return false;
+    if(q && ![p.projectId,p.projectName,p.pm,p.status,p.testStatus,p.priority,p.remarks,...p.resources,...rolesForProject(p)].join(" ").toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function involvementViewPlan(plan){
+  // Resource Involvement cards intentionally ignore the global Resource filter.
+  // Clicking “View <resource>” focuses the rest of the dashboard without hiding peer resource cards.
+  const pf=el.projectFilter.value, projectQ=el.projectSearch.value.trim().toLowerCase(), role=el.roleFilter.value, sf=el.statusFilter.value, ts=el.testStatusFilter.value, pri=el.priorityFilter.value;
+  const q=el.searchFilter.value.trim().toLowerCase();
+  return plan.filter(p=>{
+    if(pf && p.projectGroup!==pf) return false;
+    if(projectQ && ![p.projectId,p.projectName].join(" ").toLowerCase().includes(projectQ)) return false;
+    if(role && !rolesForProject(p).includes(role)) return false;
+    if(sf && (p.status||"Unspecified")!==sf) return false;
+    if(ts && p.testStatus!==ts) return false;
+    if(pri && priorityLabel(p.priority)!==pri) return false;
+    if(q && ![p.projectId,p.projectName,p.pm,p.status,p.testStatus,p.priority,p.remarks,...p.resources,...rolesForProject(p)].join(" ").toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function ganttHorizon(plan){
+  if(el.ganttScope.value==="forecast") return forecastHorizon(plan);
+  const dated=plan.filter(p=>p.start&&p.end);
+  if(!dated.length) return forecastHorizon(plan);
+  let start=new Date(Math.min(...dated.map(p=>parseDate(p.start))));
+  let end=new Date(Math.max(...dated.map(p=>parseDate(p.end))));
+  if(el.dateFrom.value) start=parseDate(el.dateFrom.value);
+  if(el.dateTo.value) end=parseDate(el.dateTo.value);
+  if(end<start){ const tmp=start; start=end; end=tmp; }
+  return {start,end};
+}
+
+function resourceInvolvement(plan){
+  const cfg=getConfig();
+  const pool=allResources(plan);
+  const futureMetrics=resourceMetrics(plan).metrics;
+  const result={};
+  pool.forEach(r=>{
+    const assigned=plan.filter(p=>p.resources.includes(r));
+    let dated=0,tbd=0,past=0,current=0,future=0,totalShare=0,lastEnd=null;
+    assigned.forEach(p=>{
+      const n=Math.max(1,p.resources.length);
+      if(Number.isFinite(Number(p.effortMD))){
+        totalShare += cfg.effortModel==="split" ? Number(p.effortMD)/n : Number(p.effortMD);
+      }
+      if(p.start&&p.end){
+        dated++;
+        const st=parseDate(p.start), en=parseDate(p.end);
+        if(en<TODAY) past++;
+        else if(st<=TODAY && en>=TODAY) current++;
+        else if(st>TODAY) future++;
+        if(!lastEnd || en>lastEnd) lastEnd=en;
+      } else tbd++;
+    });
+    result[r]={assigned:assigned.length,dated,tbd,past,current,future,totalShare,lastEnd,
+      avg:futureMetrics[r]?.avg||0,peak:futureMetrics[r]?.peak||0};
+  });
+  return result;
+}
+
+
+function buildDaily(plan){
+  const cfg=getConfig(), daily={};
+  const pool=allResources(plan);
+  pool.forEach(r=>daily[r]={});
+  plan.forEach(p=>{
+    if(!p.start||!p.end||!p.resources.length) return;
+    const days=workdaysBetween(p.start,p.end);
+    if(!days.length) return;
+    if(!Number.isFinite(Number(p.effortMD))||Number(p.effortMD)<0) return;
+    const n=p.resources.length;
+    const perResourceEffort = cfg.effortModel==="split" ? Number(p.effortMD)/n : Number(p.effortMD);
+    const mdPerDay=perResourceEffort/days.length;
+    p.resources.forEach(r=>{
+      if(!daily[r]) daily[r]={};
+      days.forEach(day=>{
+        const k=iso(day);
+        if(!daily[r][k]) daily[r][k]={md:0,projects:[]};
+        daily[r][k].md += mdPerDay;
+        daily[r][k].projects.push({uid:p.uid,id:p.projectId,name:p.projectName,md:mdPerDay});
+      });
+    });
+  });
+  return daily;
+}
+
+function periodKey(dt,scale){
+  const y=dt.getFullYear(), m=dt.getMonth();
+  if(scale==="month") return `${y}-${String(m+1).padStart(2,"0")}`;
+  if(scale==="quarter") return `${y}-Q${Math.floor(m/3)+1}`;
+  const x=new Date(dt);
+  const dow=x.getDay(); // Sun=0
+  x.setDate(x.getDate()-dow);
+  return iso(x);
+}
+function periodLabel(k,scale){
+  if(scale==="week"){
+    const d=parseDate(k), e=new Date(d); e.setDate(e.getDate()+4);
+    return `${d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"})}–${e.toLocaleDateString("en-GB",{day:"2-digit",month:"short"})}`;
+  }
+  if(scale==="month"){
+    const [y,m]=k.split("-");
+    return new Date(+y,+m-1,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"});
+  }
+  return k;
+}
+function periodWorkdays(key,scale,horizon){
+  let s,e;
+  if(scale==="week"){ s=parseDate(key); e=new Date(s); e.setDate(e.getDate()+4); }
+  else if(scale==="month"){ const [y,m]=key.split("-").map(Number); s=new Date(y,m-1,1); e=new Date(y,m,0); }
+  else { const [y,q]=key.split("-Q"); s=new Date(+y,(+q-1)*3,1); e=new Date(+y,+q*3,0); }
+  if(s<horizon.start) s=new Date(horizon.start);
+  if(e>horizon.end) e=new Date(horizon.end);
+  let count=0; for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)) if(isWorkday(d)) count++;
+  return count;
+}
+function aggregate(plan){
+  const cfg=getConfig(), horizon=forecastHorizon(plan), daily=buildDaily(plan), result={}, periodSet=new Set();
+  for(let d=new Date(horizon.start);d<=horizon.end;d.setDate(d.getDate()+1)) if(isWorkday(d)) periodSet.add(periodKey(d,cfg.scale));
+  const periods=[...periodSet];
+  allResources(plan).forEach(r=>{
+    result[r]={};
+    periods.forEach(pk=>result[r][pk]={md:0,capacity:periodWorkdays(pk,cfg.scale,horizon)*cfg.capacity,load:0});
+    Object.entries(daily[r]||{}).forEach(([day,obj])=>{
+      const dt=parseDate(day); if(dt<horizon.start||dt>horizon.end) return;
+      const pk=periodKey(dt,cfg.scale);
+      if(!result[r][pk]) result[r][pk]={md:0,capacity:periodWorkdays(pk,cfg.scale,horizon)*cfg.capacity,load:0};
+      result[r][pk].md+=obj.md;
+    });
+    periods.forEach(pk=>{
+      const x=result[r][pk];
+      x.load=x.capacity>0?x.md/x.capacity*100:0;
+    });
+  });
+  return {result,periods,horizon,daily};
+}
+
+function resourceMetrics(plan){
+  const cfg=getConfig(), ag=aggregate(plan), out={};
+  allResources(plan).forEach(r=>{
+    const arr=(ag.periods||[]).map(pk=>ag.result[r]?.[pk]?.load||0);
+    const totalMD=(ag.periods||[]).reduce((s,pk)=>s+(ag.result[r]?.[pk]?.md||0),0);
+    const cap=(ag.periods||[]).reduce((s,pk)=>s+(ag.result[r]?.[pk]?.capacity||0),0);
+    out[r]={avg:cap?totalMD/cap*100:0,peak:arr.length?Math.max(...arr):0,totalMD,capacity:cap};
+  });
+  return {metrics:out,ag,cfg};
+}
+
+function overlapWindows(plan){
+  const cfg=getConfig(), horizon=forecastHorizon(plan), daily=buildDaily(plan), out=[];
+  allResources(plan).forEach(r=>{
+    const entries=[];
+    for(let d=new Date(horizon.start);d<=horizon.end;d.setDate(d.getDate()+1)){
+      if(!isWorkday(d)) continue;
+      const k=iso(d), cell=daily[r]?.[k];
+      if(cell && cell.projects.length>=2){
+        const ids=[...new Set(cell.projects.map(p=>p.uid))].sort();
+        entries.push({date:k,ids,projects:cell.projects,load:cell.md/cfg.capacity*100,md:cell.md});
+      }
+    }
+    let group=null;
+    entries.forEach(e=>{
+      const sig=e.ids.join("|");
+      if(!group || group.sig!==sig){
+        if(group) out.push(group);
+        group={resource:r,sig,start:e.date,end:e.date,days:1,totalMD:e.md,loads:[e.load],projects:e.projects};
+      } else {
+        group.end=e.date; group.days++; group.totalMD+=e.md; group.loads.push(e.load);
+      }
+    });
+    if(group) out.push(group);
+  });
+  return out.map(g=>{
+    const avg=g.loads.reduce((a,b)=>a+b,0)/g.loads.length;
+    const peak=Math.max(...g.loads);
+    const capacity=g.days*cfg.capacity;
+    return {...g,avg,peak,gap:Math.max(0,g.totalMD-capacity),projectNames:[...new Map(g.projects.map(p=>[p.uid,`${p.id || "No ID"} — ${p.name}`])).values()]};
+  });
+}
+
+function refreshFilterOptions(){
+  const prev={p:el.projectFilter.value,r:el.resourceFilter.value,role:el.roleFilter.value,s:el.statusFilter.value,ts:el.testStatusFilter.value,pri:el.priorityFilter.value};
+  const plan=proposedPlan;
+  const fill=(node,vals,placeholder)=>{
+    node.innerHTML=`<option value="">${placeholder}</option>`+vals.map(v=>`<option value="${escapeAttr(v.value??v)}">${escapeHtml(v.label??v)}</option>`).join("");
+  };
+  fill(el.projectFilter,[...new Set([...PROJECT_OPTIONS,...plan.map(p=>p.projectGroup||inferProjectGroup(p)).filter(Boolean)])],"All Projects");
+  fill(el.resourceFilter,allResources(plan),"All Resources");
+  fill(el.roleFilter,[...new Set([...ROLE_OPTIONS,...plan.flatMap(rolesForProject)])],"All Roles");
+  fill(el.statusFilter,allSourceStatuses(plan),"All Project Statuses");
+  fill(el.testStatusFilter,allTestStatuses(plan),"All Test Statuses");
+  fill(el.priorityFilter,PRIORITY_OPTIONS,"All Priorities");
+  [ [el.projectFilter,prev.p],[el.resourceFilter,prev.r],[el.roleFilter,prev.role],[el.statusFilter,prev.s],[el.testStatusFilter,prev.ts],[el.priorityFilter,prev.pri] ].forEach(([n,v])=>{ if([...n.options].some(o=>o.value===v)) n.value=v; });
+  el.removeResourceSelect.innerHTML=`<option value="">Select resource</option>`+allResources(plan).map(v=>`<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join("");
+  el.removeTestStatusSelect.innerHTML=`<option value="">Select status</option>`+allTestStatuses(plan).map(v=>`<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join("");
+  el.removeSourceStatusSelect.innerHTML=`<option value="">Select status</option>`+allSourceStatuses(plan).map(v=>`<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join("");
+  el.roleStandardList.innerHTML=ROLE_OPTIONS.map(v=>`<span class="role-chip">${escapeHtml(v)}</span>`).join("");
+}
+function escapeHtml(v){ return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+function escapeAttr(v){ return escapeHtml(v); }
+
+function renderKPIs(plan){
+  const {metrics,ag,cfg}=resourceMetrics(plan), overlaps=overlapWindows(plan);
+  const res=focusedResourceNames(Object.keys(metrics));
+  const loads=res.map(r=>metrics[r]?.avg||0);
+  const fully=loads.filter(x=>x>=cfg.high&&x<=cfg.over).length;
+  const under=loads.filter(x=>x>0&&x<cfg.under).length;
+  const overloaded=loads.filter(x=>x>cfg.over).length;
+  const totalAllocation=loads.reduce((a,b)=>a+b,0);
+  const totalCapacity=res.length*100;
+  let gaps=0;
+  res.forEach(r=>ag.periods.forEach(pk=>{ if((ag.result[r]?.[pk]?.load||0)>cfg.over) gaps++; }));
+  const cards=[
+    ["Total Projects",plan.length,"Filtered plan rows"],
+    ["Total Resources",res.length,"Resource pool"],
+    ["Fully Utilized",fully,`${cfg.high}–${cfg.over}% avg load`],
+    ["Under-utilized",under,`Below ${cfg.under}% avg load`],
+    ["Overloaded",overloaded,`Above ${cfg.over}% avg load`],
+    ["Total Allocation %",`${Math.round(totalAllocation)}%`,"Sum of resource avg loads"],
+    ["Total Capacity %",`${Math.round(totalCapacity)}%`,"100% per resource"],
+    ["Resource Conflicts",overlaps.length,"Overlap windows"],
+    ["Upcoming Capacity Gaps",gaps,"Resource-periods > threshold"]
+  ];
+  $("kpis").innerHTML=cards.map(c=>`<div class="panel kpi"><div class="kpi-label">${c[0]}</div><div class="kpi-value">${c[1]}</div><div class="kpi-foot">${c[2]}</div></div>`).join("");
+}
+
+function renderCompare(){
+  const cur=resourceMetrics(filteredPlan(currentPlan)), prop=resourceMetrics(filteredPlan(proposedPlan));
+  const res=focusedResourceNames([...new Set([...Object.keys(cur.metrics),...Object.keys(prop.metrics)])]).sort();
+  $("compareBody").innerHTML=res.length?res.map(r=>{
+    const a=cur.metrics[r]||{avg:0,peak:0}, b=prop.metrics[r]||{avg:0,peak:0}, delta=b.avg-a.avg;
+    return `<tr><td><b>${escapeHtml(r)}</b></td><td>${a.avg.toFixed(0)}%</td><td>${b.avg.toFixed(0)}%</td><td class="${delta>0.05?"delta-pos":delta<-0.05?"delta-neg":""}">${delta>=0?"+":""}${delta.toFixed(0)}%</td><td>${a.peak.toFixed(0)}%</td><td>${b.peak.toFixed(0)}%</td></tr>`;
+  }).join(""):`<tr><td colspan="6" class="empty">No forecastable resources under current filters.</td></tr>`;
+}
+
+function renderInvolvement(plan){
+  const cfg=getConfig(), inv=resourceInvolvement(involvementViewPlan(plan));
+  const entries=Object.entries(inv).sort((a,b)=>{
+    if(a[0]==="Demo Resource C") return -1;
+    if(b[0]==="Demo Resource C") return 1;
+    return b[1].assigned-a[1].assigned;
+  });
+  $("involvementGrid").innerHTML=entries.length?entries.map(([r,m])=>{
+    let status,klass;
+    if(m.peak>cfg.over){ status="Future overloaded"; klass="status-over"; }
+    else if(m.peak>=cfg.high){ status="High future load"; klass="status-overlap"; }
+    else if(m.peak>0){ status="Future capacity available"; klass="c-available"; }
+    else { status="Available for new work"; klass="c-available"; }
+    const availability=m.peak===0
+      ? `No dated load from ${TODAY.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}`
+      : `Future peak ${m.peak.toFixed(0)}% · avg ${m.avg.toFixed(0)}%`;
+    const featured=r==="Demo Resource C"?" featured":"";
+    const focused=el.resourceFilter.value===r?" focused":"";
+    return `<div class="involve-card${featured}${focused}">
+      <div class="involve-head"><div class="involve-name">${escapeHtml(r)}${r==="Demo Resource C"?' <span class="small">· highlighted</span>':""}</div><span class="involve-status ${klass}">${status}</span></div>
+      <div class="involve-metrics">
+        <div class="im"><b>${m.assigned}</b><span>Project register assignments</span></div>
+        <div class="im"><b>${m.dated}</b><span>Dated assignments</span></div>
+        <div class="im"><b>${m.tbd}</b><span>TBD / undated</span></div>
+        <div class="im"><b>${m.totalShare.toFixed(1)}</b><span>Planned effort share (MD)</span></div>
+      </div>
+      <div class="involve-foot"><span>${availability} · ${m.past} completed-window / ${m.current} current / ${m.future} future dated</span><button type="button" class="btn focus-btn" data-focus-resource="${escapeAttr(r)}">${el.resourceFilter.value===r?`Viewing ${escapeHtml(r)} · Show All`:`View ${escapeHtml(r)}`}</button></div>
+    </div>`;
+  }).join(""):`<div class="empty">No resource involvement under current filters.</div>`;
+  document.querySelectorAll("[data-focus-resource]").forEach(btn=>btn.addEventListener("click",e=>{
+    const r=e.currentTarget.dataset.focusResource;
+    const isAlreadyFocused=el.resourceFilter.value===r;
+    el.resourceFilter.value=isAlreadyFocused?"":r;
+    el.ganttScope.value="full";
+    el.dateFrom.value=""; el.dateTo.value="";
+    renderAll();
+    toast(isAlreadyFocused?`Showing all resources again.`:`Focused resource-specific views on ${r}. Involvement cards remain visible.`);
+  }));
+}
+
+function renderResourceBars(plan){
+  const {metrics,cfg}=resourceMetrics(plan), res=focusedResourceNames(Object.keys(metrics)).sort((a,b)=>metrics[b].peak-metrics[a].peak);
+  $("resourceBars").innerHTML=res.length?res.map(r=>{
+    const v=metrics[r].peak;
+    return `<div class="rb-row"><div class="rb-name" title="${escapeAttr(r)}">${escapeHtml(r)}</div><div class="bar"><span style="width:${Math.min(100,v)}%;background:${barColor(v,cfg)}"></span></div><div class="rb-val">${v.toFixed(0)}%<div class="small">${loadLabel(v,cfg)}</div></div></div>`;
+  }).join(""):`<div class="empty">No resource load to display.</div>`;
+}
+
+function renderForecast(plan){
+  const {result,periods,cfg}=resourceMetrics(plan).ag ? resourceMetrics(plan) : {};
+  const rm=resourceMetrics(plan), ag=rm.ag, resources=focusedResourceNames(Object.keys(rm.metrics)).sort();
+  const head=`<thead><tr><th style="text-align:left">Resource</th>${ag.periods.map(pk=>`<th>${escapeHtml(periodLabel(pk,cfg.scale))}</th>`).join("")}</tr></thead>`;
+  const body=resources.map(r=>`<tr><td class="res">${escapeHtml(r)}</td>${ag.periods.map(pk=>{
+    const x=ag.result[r]?.[pk]||{load:0,md:0,capacity:0};
+    return `<td><div class="heat ${loadClass(x.load,cfg)}" title="${escapeAttr(r)} · ${escapeAttr(periodLabel(pk,cfg.scale))} · Demand ${x.md.toFixed(2)} MD / Capacity ${x.capacity.toFixed(2)} MD">${x.load?Math.round(x.load)+"%":"—"}</div></td>`;
+  }).join("")}</tr>`).join("");
+  $("forecastTable").innerHTML=head+`<tbody>${body||`<tr><td class="empty">No data</td></tr>`}</tbody>`;
+}
+
+function conflictingAssignments(plan){
+  const daily=buildDaily(plan), set=new Set();
+  Object.values(daily).forEach(days=>Object.values(days).forEach(c=>{
+    if(c.projects.length>=2) c.projects.forEach(p=>set.add(p.uid));
+  }));
+  return set;
+}
+function renderGantt(plan){
+  const horizon=ganttHorizon(plan), span=Math.max(1,horizon.end-horizon.start), conflicts=conflictingAssignments(plan), rows=[];
+  plan.filter(p=>p.start&&p.end&&p.resources.length).forEach(p=>{
+    p.resources.forEach(r=>{
+      if(el.resourceFilter.value && r!==el.resourceFilter.value) return;
+      const s=parseDate(p.start), e=parseDate(p.end);
+      if(e<horizon.start||s>horizon.end) return;
+      const left=Math.max(0,(Math.max(s,horizon.start)-horizon.start)/span*100);
+      const right=Math.min(horizon.end,e);
+      const width=Math.max(1,(right-Math.max(s,horizon.start))/span*100+1);
+      rows.push({p,r,left,width,conflict:conflicts.has(p.uid)});
+    });
+  });
+  const ticks=[];
+  for(let i=0;i<=4;i++){ const d=new Date(horizon.start.getTime()+span*i/4); ticks.push(fmtDate(iso(d))); }
+  const head=`<div class="g-head"><div>Resource</div><div>Project</div><div>Dates</div><div style="display:flex;justify-content:space-between">${ticks.map(t=>`<span>${t}</span>`).join("")}</div></div>`;
+  const body=rows.slice(0,80).map(x=>`<div class="g-row"><div><b>${escapeHtml(x.r)}</b></div><div class="g-title" title="${escapeAttr(projectLabel(x.p))}">${escapeHtml(projectLabel(x.p))}</div><div>${fmtDate(x.p.start)}<br>${fmtDate(x.p.end)}</div><div><div class="timeline"><span class="gbar ${x.conflict?"conflict":""}" style="left:${x.left}%;width:${x.width}%"></span></div></div></div>`).join("");
+  $("gantt").innerHTML=head+(body||`<div class="empty">No dated resource assignments in this horizon.</div>`);
+}
+
+function renderOverlaps(plan){
+  const cfg=getConfig(), groups=overlapWindows(plan).filter(g=>!el.resourceFilter.value||g.resource===el.resourceFilter.value);
+  $("overlapBody").innerHTML=groups.length?groups.map(g=>{
+    const status=g.peak>cfg.over?"Overloaded":"Overlap";
+    return `<tr><td><b>${escapeHtml(g.resource)}</b></td><td>${g.projectNames.map(escapeHtml).join("<br>")}</td><td>${fmtDate(g.start)} – ${fmtDate(g.end)}</td><td><b>${g.avg.toFixed(0)}%</b><div class="small">Peak ${g.peak.toFixed(0)}%</div></td><td>${g.totalMD.toFixed(2)} MD</td><td>${g.gap.toFixed(2)} MD</td><td><span class="status ${status==="Overloaded"?"status-over":"status-overlap"}">${status}</span></td></tr>`;
+  }).join(""):`<tr><td colspan="7" class="empty">No overlapping resource assignments detected in the selected horizon.</td></tr>`;
+}
+
+function renderCapacityDemand(plan){
+  const {metrics}=resourceMetrics(plan), entries=focusedMetricEntries(metrics), max=Math.max(1,...entries.map(([,x])=>Math.max(x.totalMD,x.capacity)));
+  $("capacityDemand").innerHTML=entries.sort((a,b)=>b[1].totalMD-a[1].totalMD).map(([r,m])=>`<div class="cap-row"><div class="rb-name">${escapeHtml(r)}</div><div><div class="cap-bars" title="Demand ${m.totalMD.toFixed(2)} MD · Capacity ${m.capacity.toFixed(2)} MD"><span class="cap-demand" style="width:${m.totalMD/max*100}%"></span><span class="cap-capacity" style="width:${m.capacity/max*100}%"></span></div><div class="small">${m.totalMD.toFixed(1)} MD demand / ${m.capacity.toFixed(1)} MD capacity</div></div></div>`).join("")||`<div class="empty">No capacity data.</div>`;
+}
+
+function renderDataQuality(plan){
+  const noDates=plan.filter(p=>!p.start||!p.end).length;
+  const noResource=plan.filter(p=>!p.resources.length).length;
+  const noEffort=plan.filter(p=>!Number.isFinite(Number(p.effortMD))).length;
+  const ids=plan.map(p=>p.projectId.trim()).filter(Boolean), dup=[...new Set(ids.filter((x,i,a)=>a.indexOf(x)!==i))].length;
+  const data=[[noDates,"Rows without full dates"],[noResource,"Rows without QA resource"],[noEffort,"Rows without effort"],[dup,"Repeated Project IDs"]];
+  $("dataQuality").innerHTML=data.map(x=>`<div class="dq"><b>${x[0]}</b><span>${x[1]}</span></div>`).join("");
+}
+
+function renderNotes(plan){
+  const rm=resourceMetrics(plan), cfg=rm.cfg, overlaps=overlapWindows(plan);
+  const sorted=focusedMetricEntries(rm.metrics).sort((a,b)=>b[1].peak-a[1].peak);
+  const overloaded=sorted.filter(([,m])=>m.peak>cfg.over);
+  const available=sorted.filter(([,m])=>m.avg<cfg.under);
+  const gaps=plan.filter(p=>!p.start||!p.end||!p.resources.length||!Number.isFinite(Number(p.effortMD))).length;
+  const notes=[];
+  if(overloaded.length) notes.push(`<div class="note"><strong>Rebalance ${overloaded.length} overloaded resource${overloaded.length>1?"s":""}</strong><p>${overloaded.map(([r,m])=>`${escapeHtml(r)} peaks at ${m.peak.toFixed(0)}%`).join("; ")}. Use the register dropdowns to move work to lower-load resources and compare the Proposed Plan immediately.</p></div>`);
+  else notes.push(`<div class="note"><strong>No overload in the selected forecast</strong><p>Peak load stays within the configured ${cfg.over}% threshold for forecastable assignments.</p></div>`);
+  if(available.length) notes.push(`<div class="note"><strong>Capacity buffer available</strong><p>${available.slice(0,3).map(([r,m])=>`${escapeHtml(r)} avg ${m.avg.toFixed(0)}%`).join("; ")}. These resources are candidates for what-if reassignment, subject to skill/domain fit.</p></div>`);
+  const inv=resourceInvolvement(registerViewPlan(plan));
+  if(inv["Demo Resource C"] && inv["Demo Resource C"].assigned){
+    const mm=inv["Demo Resource C"];
+    notes.push(`<div class="note"><strong>Demo Resource C involvement is present but mostly historical/TBD</strong><p>Demo Resource C is assigned to <b>${mm.assigned}</b> Project Register rows (${mm.dated} dated, ${mm.tbd} TBD/undated) with about <b>${mm.totalShare.toFixed(1)} MD</b> planned effort share. His dated register work ends before the current forecast start, so the future view shows ${mm.peak.toFixed(0)}% peak load. Treat the ${mm.tbd} TBD items as potential future demand before committing all apparent capacity.</p></div>`);
+  }
+  if(overlaps.length) notes.push(`<div class="note"><strong>${overlaps.length} overlap window${overlaps.length>1?"s":""}</strong><p>Overlap does not always mean overload; prioritize windows where combined load exceeds the configured threshold.</p></div>`);
+  if(gaps) notes.push(`<div class="note"><strong>${gaps} planning rows need data</strong><p>Missing dates, effort or resource assignments are excluded from numeric load and can hide future capacity pressure.</p></div>`);
+  $("managementNotes").innerHTML=notes.join("");
+}
+
+function allocationText(p){
+  if(!p.start||!p.end||!Number.isFinite(Number(p.effortMD))||!p.resources.length) return "Not forecastable";
+  const days=workdaysBetween(p.start,p.end).length; if(!days) return "No workdays";
+  const cfg=getConfig(), effort=cfg.effortModel==="split"?Number(p.effortMD)/p.resources.length:Number(p.effortMD);
+  return `${((effort/(days*cfg.capacity))*100).toFixed(0)}% · ${effort.toFixed(2)} MD`;
+}
+function resourceOptions(selected){
+  return `<option value="">Unassigned</option>`+allResources().map(r=>`<option value="${escapeAttr(r)}" ${r===selected?"selected":""}>${escapeHtml(r)}</option>`).join("");
+}
+function editProject(uid,field,value){
+  const p=proposedPlan.find(x=>x.uid===uid); if(!p) return;
+  if(field==="effortMD"){ p[field]=value===""?null:Number(value); }
+  else p[field]=value;
+  pinnedRegisterUids.add(uid);
+  renderAll(false);
+}
+function editRole(uid,index,value){
+  const p=proposedPlan.find(x=>x.uid===uid); if(!p) return;
+  if(!Array.isArray(p.resourceRoles)) p.resourceRoles=(p.resources||[]).map(()=>"SQA Engineer");
+  p.resourceRoles[index]=value||"SQA Engineer";
+  pinnedRegisterUids.add(uid);
+  renderAll(true);
+}
+function editResource(uid,index,value){
+  const p=proposedPlan.find(x=>x.uid===uid); if(!p) return;
+  let arr=[...p.resources];
+  let roles=rolesForProject(p);
+  const old=arr[index]||"";
+  if(value){
+    const existing=arr.indexOf(value);
+    if(existing>=0 && existing!==index){
+      // Swap slots instead of creating a duplicate. This fixes Resource 2 -> Resource 1 changes.
+      const tempRes=arr[index]||""; const tempRole=roles[index]||"SQA Engineer";
+      arr[index]=arr[existing]; roles[index]=roles[existing]||"SQA Engineer";
+      if(tempRes){ arr[existing]=tempRes; roles[existing]=tempRole; }
+      else { arr.splice(existing,1); roles.splice(existing,1); }
+      toast(`${value} was already assigned; resource slots were swapped without removing the project row.`);
+    } else {
+      arr[index]=value;
+      roles[index]=roles[index]||"SQA Engineer";
+    }
+  } else if(index<arr.length){
+    arr.splice(index,1); roles.splice(index,1);
+  }
+  p.resources=arr.filter(Boolean).slice(0,3);
+  p.resourceRoles=roles.slice(0,p.resources.length);
+  pinnedRegisterUids.add(uid);
+  renderAll(true);
+  if(old!==value && el.resourceFilter.value){ toast("Resource changed. Edited project is pinned in the register even if it is outside the active Resource filter."); }
+}
+function removeProject(uid){
+  proposedPlan=proposedPlan.filter(p=>p.uid!==uid);
+  renderAll(true); toast("Project removed from Proposed Plan.");
+}
+
+function validateRegisterProject(p){
+  if(!p.projectGroup) return "Project is required.";
+  if(!(p.projectId||"").trim() && !(p.projectName||"").trim()) return "Enter JIRA ID or Task Details.";
+  if(p.start&&p.end&&parseDate(p.end)<parseDate(p.start)) return "End date cannot be before Start date.";
+  return "";
+}
+function saveRegisterRow(uid){
+  const p=proposedPlan.find(x=>x.uid===uid); if(!p) return;
+  const err=validateRegisterProject(p); if(err){ toast(err); return; }
+  p.draft=false; pinnedRegisterUids.add(uid); renderAll(true); toast("Register row saved to the Proposed Plan.");
+}
+function addNewRegisterRow(){
+  const uid=`NEW${uidCounter++}`;
+  proposedPlan.unshift({uid,sourceRow:null,projectGroup:el.projectFilter.value||"HRMS",projectId:"",projectName:"",pm:"",effortMD:null,rawEffort:null,devRelease:null,start:null,end:null,uatRelease:null,plannedGoLive:null,resources:[],resourceRoles:[],role:"SQA Engineer",priority:"Unspecified",status:"",testStatus:allTestStatuses().includes("Not Started")?"Not Started":(allTestStatuses()[0]||""),remarks:"Added from Project & Resource Register",isSource:false,draft:true});
+  pinnedRegisterUids.add(uid); refreshFilterOptions(); renderAll(); toast("New editable row added. Complete the record and click Save.");
+}
+function renderRegister(){
+  const changed=changedUids(), q=el.registerSearch.value.trim().toLowerCase();
+  const base=filteredPlan(proposedPlan).filter(p=>!q||[p.projectId,p.projectName,p.pm,p.projectGroup].join(" ").toLowerCase().includes(q));
+  const pinned=proposedPlan.filter(p=>pinnedRegisterUids.has(p.uid) && !base.some(x=>x.uid===p.uid) && (!q||[p.projectId,p.projectName,p.pm,p.projectGroup].join(" ").toLowerCase().includes(q)));
+  const visible=[...base,...pinned];
+  $("registerCount").textContent=`${base.length} matching rows${pinned.length?` + ${pinned.length} edited/new row${pinned.length>1?"s":""} pinned`:""} · ${proposedPlan.length} total proposed rows`;
+  $("projectBody").innerHTML=visible.length?visible.map(p=>{
+    const isAdded=!SOURCE.some(s=>s.uid===p.uid), isChanged=changed.has(p.uid), outside=pinned.some(x=>x.uid===p.uid), roles=rolesForProject(p);
+    const slots=[0,1,2].map(i=>`<td><div class="resource-role-pair"><select aria-label="Resource ${i+1}" data-resource="${p.uid}|${i}">${resourceOptions(p.resources[i]||"")}</select><select aria-label="Role ${i+1}" data-role="${p.uid}|${i}" ${p.resources[i]?"":"disabled"}>${roleOptions(roles[i]||"SQA Engineer")}</select></div></td>`).join("");
+    return `<tr class="${p.draft?"draft ":""}${outside?"outside-filter ":""}${isAdded&&!p.draft?"added":isChanged&&!p.draft?"changed":""}">
+      <td><select class="project-category" data-edit="${p.uid}|projectGroup">${projectGroupOptions(p.projectGroup||inferProjectGroup(p))}</select>${p.draft?'<span class="draft-badge">New · unsaved</span>':""}</td>
+      <td><input class="inline-text" data-edit="${p.uid}|projectId" value="${escapeAttr(p.projectId||"")}" placeholder="JIRA ID"></td>
+      <td><input class="task-input" data-edit="${p.uid}|projectName" value="${escapeAttr(p.projectName||"")}" placeholder="Task details">${outside?'<span class="filter-pin">Edited · outside filter</span>':""}</td>
+      <td><input class="pm-input" data-edit="${p.uid}|pm" value="${escapeAttr(p.pm||"")}" placeholder="PM"></td>
+      <td><input type="date" data-edit="${p.uid}|start" value="${p.start||""}"></td>
+      <td><input type="date" data-edit="${p.uid}|end" value="${p.end||""}"></td>
+      <td><input type="number" min="0" step=".1" data-edit="${p.uid}|effortMD" value="${p.effortMD??""}" style="width:76px"></td>
+      ${slots}
+      <td><b>${escapeHtml(allocationText(p))}</b><div class="alloc-note">${p.resources.length||0} assigned resource(s)</div></td>
+      <td><select data-edit="${p.uid}|testStatus" style="min-width:155px">${testStatusOptions(p.testStatus||"Not Started")}</select></td>
+      <td><div class="row-actions"><button class="btn-primary" data-save="${p.uid}">${p.draft?"Save":"Update"}</button><button class="btn-danger" data-remove="${p.uid}">Remove</button></div></td>
+    </tr>`;
+  }).join(""):`<tr><td colspan="13" class="empty">No register rows match the current filters.</td></tr>`;
+
+  document.querySelectorAll("[data-edit]").forEach(node=>node.addEventListener("change",e=>{ const [uid,field]=e.target.dataset.edit.split("|"); editProject(uid,field,e.target.value); }));
+  document.querySelectorAll("[data-resource]").forEach(node=>node.addEventListener("change",e=>{ const [uid,index]=e.target.dataset.resource.split("|"); editResource(uid,Number(index),e.target.value); }));
+  document.querySelectorAll("[data-role]").forEach(node=>node.addEventListener("change",e=>{ const [uid,index]=e.target.dataset.role.split("|"); editRole(uid,Number(index),e.target.value); }));
+  document.querySelectorAll("[data-save]").forEach(node=>node.addEventListener("click",e=>saveRegisterRow(e.currentTarget.dataset.save)));
+  document.querySelectorAll("[data-remove]").forEach(node=>node.addEventListener("click",e=>removeProject(e.currentTarget.dataset.remove)));
+}
+
+function renderScenarioBanner(){
+  const changes=changedUids().size;
+  $("changeCount").textContent=changes?`${changes} proposed row change${changes>1?"s":""}`:"No proposed changes";
+  const b=$("scenarioBanner");
+  if(changes){ b.classList.add("show"); b.innerHTML=`<b>What-If mode active:</b> ${changes} project row${changes>1?"s are":" is"} different from the Current Plan. Dashboard charts are showing the <b>Proposed Plan</b>.`; }
+  else { b.classList.remove("show"); b.textContent=""; }
+  $("applyScenario").disabled=!changes;
+}
+
+function renderAll(refreshOptions=false){
+  if(refreshOptions) refreshFilterOptions();
+  const chosen=filteredPlan(proposedPlan);
+  $("viewChip").textContent="Proposed Plan";
+  renderKPIs(chosen);
+  renderCompare();
+  renderInvolvement(proposedPlan);
+  renderResourceBars(chosen);
+  renderForecast(chosen);
+  renderGantt(chosen);
+  renderOverlaps(chosen);
+  renderCapacityDemand(chosen);
+  renderDataQuality(chosen);
+  renderNotes(chosen);
+  renderRegister();
+  renderScenarioBanner();
+  scheduleAutoSave();
+}
+
+function addNewResource(){
+  const name=el.newResource.value.trim();
+  if(!name) return;
+  if(allResources().some(r=>r.toLowerCase()===name.toLowerCase())){ toast("Resource already exists."); return; }
+  addedResources.push(name); el.newResource.value="";
+  refreshFilterOptions(); renderAll(); toast(`${name} added to the scenario resource pool.`);
+}
+function addNewTestStatus(){
+  const name=el.newTestStatus.value.trim();
+  if(!name) return;
+  if(allTestStatuses().some(s=>s.toLowerCase()===name.toLowerCase())){ toast("Test status already exists."); return; }
+  customTestStatuses.push(name); el.newTestStatus.value="";
+  refreshFilterOptions(); renderAll(); toast(`${name} added to Test Status options.`);
+}
+function addNewSourceStatus(){
+  const name=el.newSourceStatus.value.trim();
+  if(!name) return;
+  if(allSourceStatuses().some(s=>s.toLowerCase()===name.toLowerCase())){ toast("Project / Source Status already exists."); return; }
+  removedSourceStatuses.delete(name);
+  customSourceStatuses.push(name); el.newSourceStatus.value="";
+  refreshFilterOptions(); renderAll(); toast(`${name} added to Project / Source Status options.`);
+}
+
+function removeSelectedSourceStatus(){
+  const name=el.removeSourceStatusSelect.value;
+  if(!name){ toast("Select a Project / Source Status to remove."); return; }
+  if(name==="Unspecified"){ toast("Unspecified is the fallback status and cannot be removed."); return; }
+  if(!confirm(`Remove Project / Source Status "${name}"? Projects using it will be moved to Unspecified.`)) return;
+  removedSourceStatuses.add(name);
+  customSourceStatuses=customSourceStatuses.filter(s=>s!==name);
+  let affected=0;
+  proposedPlan.forEach(p=>{
+    const current=p.status||"Unspecified";
+    if(current===name){ p.status=""; affected++; pinnedRegisterUids.add(p.uid); }
+  });
+  if(el.statusFilter.value===name) el.statusFilter.value="";
+  refreshFilterOptions(); renderAll();
+  toast(`Project / Source Status "${name}" removed${affected?`; ${affected} project${affected>1?"s":""} moved to Unspecified`:""}.`);
+}
+
+function removeSelectedResource(){
+  const name=el.removeResourceSelect.value;
+  if(!name){ toast("Select a resource to remove."); return; }
+  if(!confirm(`Remove ${name} from the Proposed Plan? This will detach the resource from every proposed project assignment.`)) return;
+  let affected=0;
+  proposedPlan.forEach(p=>{
+    const roles=rolesForProject(p);
+    const kept=[];
+    const keptRoles=[];
+    (p.resources||[]).forEach((r,i)=>{
+      if(r===name){ affected++; pinnedRegisterUids.add(p.uid); }
+      else { kept.push(r); keptRoles.push(roles[i]||"SQA Engineer"); }
+    });
+    p.resources=kept;
+    p.resourceRoles=keptRoles;
+  });
+  addedResources=addedResources.filter(r=>r!==name);
+  if(el.resourceFilter.value===name) el.resourceFilter.value="";
+  refreshFilterOptions(); renderAll();
+  toast(`${name} removed from the Proposed Plan${affected?` (${affected} assignment${affected>1?"s":""} detached)`:""}.`);
+}
+
+function removeSelectedTestStatus(){
+  const name=el.removeTestStatusSelect.value;
+  if(!name){ toast("Select a Test Status to remove."); return; }
+  if(!confirm(`Remove Test Status "${name}"? Projects using it will be moved to another valid status.`)) return;
+  removedTestStatuses.add(name);
+  customTestStatuses=customTestStatuses.filter(s=>s!==name);
+  const candidates=[...DEFAULT_TEST_STATUSES,...customTestStatuses].filter(s=>s!==name && !removedTestStatuses.has(s));
+  const fallback=candidates.includes("Not Started")?"Not Started":(candidates[0]||"");
+  let affected=0;
+  proposedPlan.forEach(p=>{
+    if(p.testStatus===name){ p.testStatus=fallback; affected++; pinnedRegisterUids.add(p.uid); }
+  });
+  if(el.testStatusFilter.value===name) el.testStatusFilter.value="";
+  refreshFilterOptions(); renderAll();
+  toast(`Test Status "${name}" removed${affected?`; ${affected} project${affected>1?"s":""} moved to "${fallback||"blank"}"`:""}.`);
+}
+
+function clearCreateProjectForm(){ el.setupProjectName.value=""; }
+function addProject(){
+  const name=el.setupProjectName.value.trim();
+  if(!name){ toast("Enter a Project Name."); return; }
+
+  const existing=[...new Set([...PROJECT_OPTIONS,...proposedPlan.map(p=>p.projectGroup||inferProjectGroup(p)).filter(Boolean)])]
+    .find(v=>v.toLowerCase()===name.toLowerCase());
+  const projectGroup=existing||name;
+
+  const uid=`NEW${uidCounter++}`;
+  proposedPlan.unshift({
+    uid,sourceRow:null,projectGroup,projectId:"",projectName:"",pm:"",
+    effortMD:null,rawEffort:null,devRelease:null,start:null,end:null,uatRelease:null,plannedGoLive:null,
+    resources:[],resourceRoles:[],role:"SQA Engineer",priority:"Unspecified",status:"",
+    testStatus:allTestStatuses().includes("Not Started")?"Not Started":(allTestStatuses()[0]||""),
+    remarks:"Project created from Setup; complete details in Project & Resource Register",
+    isSource:false,draft:false
+  });
+  pinnedRegisterUids.add(uid);
+  clearCreateProjectForm();
+  refreshFilterOptions();
+  renderAll();
+  toast(`Project "${projectGroup}" created. Complete the remaining details in the Project & Resource Register.`);
+}
+
+function csvCell(v){ const s=String(v??""); return `"${s.replaceAll('"','""')}"`; }
+function exportScenario(){
+  const rows=[["Project","JIRA ID","Task Details","PM","Start Date","End Date","Effort MD","Allocation / Resource","Resource 1","Role 1","Resource 2","Role 2","Resource 3","Role 3","Priority","Project / Source Status","Test Status","Scenario State"]];
+  const src=new Map(SOURCE.map(p=>[p.uid,p]));
+  proposedPlan.forEach(p=>{ const rr=rolesForProject(p); rows.push([p.projectGroup||inferProjectGroup(p),p.projectId,p.projectName,p.pm,p.start,p.end,p.effortMD,allocationText(p),p.resources[0]||"",rr[0]||"",p.resources[1]||"",rr[1]||"",p.resources[2]||"",rr[2]||"",priorityLabel(p.priority),p.status||"Unspecified",p.testStatus,!src.has(p.uid)?"Added":same(src.get(p.uid),p)?"Unchanged":"Changed"]); });
+  const csv="\ufeff"+rows.map(r=>r.map(csvCell).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="Project_Status_and_Resource_Engagement_Plan.csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+
+/* ===================== Professional PDF Report Engine ===================== */
+let activeReportSegment="summary";
+
+function pdfAscii(value){
+  return String(value??"")
+    .replace(/[–—−]/g,"-").replace(/[“”]/g,'"').replace(/[‘’]/g,"'")
+    .replace(/…/g,"...").replace(/•/g,"-").replace(/→/g,"->")
+    .replace(/÷/g,"/").replace(/≥/g,">=").replace(/≤/g,"<=")
+    .replace(/Δ/g,"Delta").replace(/·/g,"-")
+    .normalize("NFKD").replace(/[^\x20-\x7E\n]/g,"");
+}
+function pdfEscape(value){ return pdfAscii(value).replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)"); }
+function pdfNum(n){ return Number(n).toFixed(2).replace(/\.00$/,""); }
+function pdfRgb(c){ return c.map(v=>(Math.max(0,Math.min(255,v))/255).toFixed(3)).join(" "); }
+function localDateStamp(d=new Date()){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function reportDateLabel(d=new Date()){ return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}); }
+
+class ManagementPDF{
+  constructor(reportTitle){
+    this.w=841.89; this.h=595.28; this.pages=[]; this.m=36; this.bottom=35; this.reportTitle=reportTitle;
+    this.colors={navy:[16,42,67],blue:[37,99,235],muted:[100,116,139],line:[218,226,236],pale:[248,251,255],green:[22,163,74],amber:[217,119,6],red:[220,38,38],white:[255,255,255],ink:[23,32,51]};
+  }
+  addPage(sectionTitle,meta=""){
+    const page={cmd:[],sectionTitle:pdfAscii(sectionTitle),meta:pdfAscii(meta)}; this.pages.push(page); this.p=page;
+    this.fillRect(0,0,this.w,34,this.colors.navy);
+    this.text(this.m,21,this.reportTitle,13,true,this.colors.white);
+    this.text(this.w-this.m,21,`Generated ${reportDateLabel()}`,7,false,[219,234,254],"right");
+    this.text(this.m,52,sectionTitle,15,true,this.colors.ink);
+    if(meta) this.text(this.m,66,meta,7,false,this.colors.muted);
+    this.line(this.m,73,this.w-this.m,73,this.colors.line,.7);
+    return 84;
+  }
+  command(c){ this.p.cmd.push(c); }
+  text(x,y,text,size=8,bold=false,color=[23,32,51],align="left"){
+    text=pdfAscii(text); if(!text) return;
+    const width=this.measure(text,size,bold);
+    if(align==="right") x-=width; else if(align==="center") x-=width/2;
+    const py=this.h-y;
+    this.command(`${pdfRgb(color)} rg BT /${bold?"F2":"F1"} ${pdfNum(size)} Tf 1 0 0 1 ${pdfNum(x)} ${pdfNum(py)} Tm (${pdfEscape(text)}) Tj ET`);
+  }
+  line(x1,y1,x2,y2,color=[218,226,236],width=.5){ this.command(`${pdfRgb(color)} RG ${pdfNum(width)} w ${pdfNum(x1)} ${pdfNum(this.h-y1)} m ${pdfNum(x2)} ${pdfNum(this.h-y2)} l S`); }
+  fillRect(x,y,w,h,color){ this.command(`${pdfRgb(color)} rg ${pdfNum(x)} ${pdfNum(this.h-y-h)} ${pdfNum(w)} ${pdfNum(h)} re f`); }
+  strokeRect(x,y,w,h,color=[218,226,236],width=.5){ this.command(`${pdfRgb(color)} RG ${pdfNum(width)} w ${pdfNum(x)} ${pdfNum(this.h-y-h)} ${pdfNum(w)} ${pdfNum(h)} re S`); }
+  measure(text,size=8,bold=false){
+    let units=0; for(const ch of pdfAscii(text)){ if("ilI1.,' ".includes(ch)) units+=.28; else if("MW@#%".includes(ch)) units+=.82; else units+=.53; }
+    return units*size*(bold?1.03:1);
+  }
+  wrap(text,width,size=8,bold=false){
+    const paras=pdfAscii(text).split("\n"),lines=[];
+    paras.forEach((para,pi)=>{
+      const words=para.split(/\s+/).filter(Boolean); let line="";
+      if(!words.length){ lines.push(""); return; }
+      words.forEach(word=>{
+        if(this.measure(word,size,bold)>width){
+          if(line){lines.push(line);line="";}
+          let chunk="";
+          for(const ch of word){ const test=chunk+ch; if(chunk&&this.measure(test,size,bold)>width){lines.push(chunk);chunk=ch;} else chunk=test; }
+          line=chunk; return;
+        }
+        const test=line?`${line} ${word}`:word;
+        if(line&&this.measure(test,size,bold)>width){ lines.push(line); line=word; } else line=test;
+      });
+      if(line) lines.push(line); if(pi<paras.length-1&&!line) lines.push("");
+    });
+    return lines.length?lines:[""];
+  }
+  drawWrapped(x,y,text,width,size=8,bold=false,color=[23,32,51],lineH=null){
+    const lines=this.wrap(text,width,size,bold),lh=lineH||size*1.25;
+    lines.forEach((ln,i)=>this.text(x,y+i*lh,ln,size,bold,color)); return {lines,height:lines.length*lh};
+  }
+  finalizeFooters(){
+    const total=this.pages.length, old=this.p;
+    this.pages.forEach((p,i)=>{ this.p=p; this.line(this.m,this.h-24,this.w-this.m,this.h-24,this.colors.line,.5); this.text(this.m,this.h-12,"Management Resource Planning Report",6.5,false,this.colors.muted); this.text(this.w-this.m,this.h-12,`Page ${i+1} of ${total}`,6.5,false,this.colors.muted,"right"); });
+    this.p=old;
+  }
+  buildBlob(){
+    this.finalizeFooters();
+    const objects=[];
+    objects[1]="<< /Type /Catalog /Pages 2 0 R >>";
+    objects[3]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+    objects[4]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
+    let id=5; const pageRefs=[];
+    this.pages.forEach(p=>{
+      const pageId=id++,contentId=id++; pageRefs.push(`${pageId} 0 R`);
+      const content=p.cmd.join("\n");
+      objects[pageId]=`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pdfNum(this.w)} ${pdfNum(this.h)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`;
+      objects[contentId]=`<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+    });
+    objects[2]=`<< /Type /Pages /Count ${this.pages.length} /Kids [${pageRefs.join(" ")}] >>`;
+    const header="%PDF-1.4\n%PDFREPORT\n"; let body=header,offsets=[0];
+    for(let i=1;i<objects.length;i++){ offsets[i]=body.length; body+=`${i} 0 obj\n${objects[i]}\nendobj\n`; }
+    const xref=body.length; body+=`xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+    for(let i=1;i<objects.length;i++) body+=`${String(offsets[i]).padStart(10,"0")} 00000 n \n`;
+    body+=`trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+    const bytes=new Uint8Array(body.length); for(let i=0;i<body.length;i++) bytes[i]=body.charCodeAt(i)&255;
+    return new Blob([bytes],{type:"application/pdf"});
+  }
+  save(filename){ const blob=this.buildBlob(),url=URL.createObjectURL(blob),a=document.createElement("a"); a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000); }
+}
+
+function reportFiltersLine(){
+  const f=[];
+  if(el.projectFilter.value) f.push(`Project: ${el.projectFilter.value}`);
+  if(el.projectSearch.value.trim()) f.push(`Project search: ${el.projectSearch.value.trim()}`);
+  if(el.resourceFilter.value) f.push(`Resource: ${el.resourceFilter.value}`);
+  if(el.roleFilter.value) f.push(`Role: ${el.roleFilter.value}`);
+  if(el.statusFilter.value) f.push(`Source status: ${el.statusFilter.value}`);
+  if(el.testStatusFilter.value) f.push(`Test status: ${el.testStatusFilter.value}`);
+  if(el.priorityFilter.value) f.push(`Priority: ${el.priorityFilter.value}`);
+  if(el.dateFrom.value||el.dateTo.value) f.push(`Date: ${el.dateFrom.value||"Any"} to ${el.dateTo.value||"Any"}`);
+  if(el.registerSearch.value.trim()) f.push(`Register search: ${el.registerSearch.value.trim()}`);
+  return f.length?`Current filters - ${f.join(" | ")}`:"Current filters - All dashboard data";
+}
+function reportPeriodLine(plan){
+  try{ const h=forecastHorizon(plan); return `Reporting period: ${fmtDate(iso(h.start))} to ${fmtDate(iso(h.end))} | Timeline: ${getConfig().scale}`; }
+  catch(e){ return "Reporting period: Current dashboard horizon"; }
+}
+function reportVisibleRegisterRows(){
+  const q=el.registerSearch.value.trim().toLowerCase();
+  const base=filteredPlan(proposedPlan).filter(p=>!q||[p.projectId,p.projectName,p.pm,p.projectGroup].join(" ").toLowerCase().includes(q));
+  const pinned=proposedPlan.filter(p=>pinnedRegisterUids.has(p.uid)&&!base.some(x=>x.uid===p.uid)&&(!q||[p.projectId,p.projectName,p.pm,p.projectGroup].join(" ").toLowerCase().includes(q)));
+  return [...base,...pinned];
+}
+function reportStatus(load,cfg){ if(load>cfg.over) return "Overloaded"; if(load>=cfg.high) return "High"; if(load>=cfg.under) return "Moderate"; if(load>0) return "Under-utilized"; return "No allocation"; }
+function reportStatusColor(status){ return status==="Overloaded"?[254,226,226]:status==="High"?[254,243,199]:status==="Moderate"?[219,234,254]:status==="Under-utilized"?[209,250,229]:[241,245,249]; }
+
+function pdfTable(pdf,{title,meta,columns,rows,widths,fontSize=7,headerSize=6.5,cellStyle=null,startNewPage=true,startY=null}){
+  let y=startNewPage?pdf.addPage(title,meta):(startY||84),pageNoStart=pdf.pages.length;
+  const x0=pdf.m,pad=3,usable=pdf.w-2*pdf.m; const sum=widths.reduce((a,b)=>a+b,0); widths=widths.map(w=>w*usable/sum);
+  const headerH=24;
+  function drawHeader(){
+    let x=x0; columns.forEach((c,i)=>{ pdf.fillRect(x,y,widths[i],headerH,[232,240,249]); pdf.strokeRect(x,y,widths[i],headerH,[204,217,232],.45); const lines=pdf.wrap(c,widths[i]-2*pad,headerSize,true).slice(0,3); lines.forEach((ln,j)=>pdf.text(x+pad,y+9+j*7,ln,headerSize,true,[41,75,112])); x+=widths[i]; }); y+=headerH;
+  }
+  drawHeader();
+  rows.forEach((row,ri)=>{
+    const wrapped=row.map((v,i)=>pdf.wrap(v,widths[i]-2*pad,fontSize,false));
+    const maxLines=Math.max(1,...wrapped.map(x=>x.length)); const rowH=Math.max(18,maxLines*(fontSize*1.23)+6);
+    if(y+rowH>pdf.h-pdf.bottom-6){ y=pdf.addPage(`${title} (continued)`,meta); drawHeader(); }
+    let x=x0;
+    row.forEach((v,i)=>{
+      let fill=ri%2?[250,252,255]:[255,255,255],txt=[23,32,51];
+      if(cellStyle){ const st=cellStyle({row:ri,col:i,value:v,record:row}); if(st?.fill) fill=st.fill; if(st?.text) txt=st.text; }
+      pdf.fillRect(x,y,widths[i],rowH,fill); pdf.strokeRect(x,y,widths[i],rowH,[226,232,240],.35);
+      wrapped[i].forEach((ln,j)=>pdf.text(x+pad,y+9+j*(fontSize*1.23),ln,fontSize,false,txt)); x+=widths[i];
+    }); y+=rowH;
+  });
+  if(!rows.length){ pdf.text(x0,y+16,"No rows match the current dashboard filters.",8,false,pdf.colors.muted); y+=28; }
+  return {y,pagesAdded:pdf.pages.length-pageNoStart};
+}
+
+function addManagementSummary(pdf){
+  const plan=filteredPlan(proposedPlan),rm=resourceMetrics(plan),cfg=rm.cfg,res=focusedResourceNames(Object.keys(rm.metrics));
+  const overlaps=overlapWindows(plan).filter(g=>!el.resourceFilter.value||g.resource===el.resourceFilter.value);
+  const loads=res.map(r=>rm.metrics[r]?.avg||0),fully=loads.filter(x=>x>=cfg.high&&x<=cfg.over).length,under=loads.filter(x=>x>0&&x<cfg.under).length,over=loads.filter(x=>x>cfg.over).length;
+  const demand=res.reduce((a,r)=>a+(rm.metrics[r]?.totalMD||0),0),capacity=res.reduce((a,r)=>a+(rm.metrics[r]?.capacity||0),0),available=Math.max(0,capacity-demand);
+  const totalAllocation=loads.reduce((a,b)=>a+b,0),avgAllocation=res.length?totalAllocation/res.length:0;
+  let gaps=0; res.forEach(r=>rm.ag.periods.forEach(pk=>{if((rm.ag.result[r]?.[pk]?.load||0)>cfg.over) gaps++;}));
+  let y=pdf.addPage("Management Summary",`${reportPeriodLine(plan)} | ${reportFiltersLine()}`);
+  const cards=[
+    ["Total Projects",plan.length,[37,99,235]],["QA Resources",res.length,[124,58,237]],["Avg Allocation",`${Math.round(avgAllocation)}%`,[8,145,178]],
+    ["Available Capacity",`${available.toFixed(1)} MD`,[15,118,110]],["Overloaded",over,[220,38,38]],["Conflicts",overlaps.length,[234,88,12]],
+    ["Fully Utilized",fully,[22,163,74]],["Under-utilized",under,[217,119,6]],["Capacity Gaps",gaps,[79,70,229]]
+  ];
+  const cardW=(pdf.w-2*pdf.m-16)/3,cardH=48;
+  cards.forEach((c,i)=>{ const col=i%3,row=Math.floor(i/3),x=pdf.m+col*(cardW+8),yy=y+row*(cardH+8); pdf.fillRect(x,yy,cardW,cardH,[248,251,255]); pdf.strokeRect(x,yy,cardW,cardH,c[2],.9); pdf.fillRect(x,yy,5,cardH,c[2]); pdf.text(x+12,yy+17,c[0],7,true,[71,85,105]); pdf.text(x+12,yy+37,String(c[1]),16,true,c[2]); });
+  y+=3*(cardH+8)+4;
+  pdf.text(pdf.m,y,"Resource Load Summary",10,true,pdf.colors.ink); y+=8;
+  const resourceRows=res.map(r=>{ const m=rm.metrics[r]||{avg:0,peak:0,totalMD:0,capacity:0}; return [r,`${m.avg.toFixed(0)}%`,`${m.peak.toFixed(0)}%`,m.totalMD.toFixed(1),m.capacity.toFixed(1),Math.max(0,m.capacity-m.totalMD).toFixed(1),reportStatus(m.peak,cfg)]; });
+  pdfTable(pdf,{title:"Resource Load Summary",meta:`${reportPeriodLine(plan)} | ${reportFiltersLine()}`,columns:["Resource","Avg Load","Peak Load","Demand MD","Capacity MD","Available MD","Status"],rows:resourceRows,widths:[120,80,80,85,85,90,110],fontSize:7.5,startNewPage:false,startY:y+6,cellStyle:({col,value})=>col===6?{fill:reportStatusColor(value)}:null});
+}
+
+function addRegisterReport(pdf){
+  const rows=reportVisibleRegisterRows().map(p=>{ const rr=rolesForProject(p),res=(p.resources||[]); return [p.projectGroup||inferProjectGroup(p),p.projectId||"",p.projectName||"",p.pm||"",p.start?fmtDate(p.start):"-",p.end?fmtDate(p.end):"-",p.effortMD==null?"-":Number(p.effortMD).toFixed(2),res[0]?`${res[0]}\n${rr[0]||""}`:"-",res[1]?`${res[1]}\n${rr[1]||""}`:"-",res[2]?`${res[2]}\n${rr[2]||""}`:"-",allocationText(p),p.testStatus||"Not Started"]; });
+  pdfTable(pdf,{title:"Project & Resource Register",meta:`${reportFiltersLine()} | Displayed rows: ${rows.length}`,columns:["Project","JIRA ID","Task Details","PM","Start","End","Effort MD","Resource 1 / Role","Resource 2 / Role","Resource 3 / Role","Allocation / Resource","Test Status"],rows,widths:[50,55,120,45,48,48,38,75,75,75,70,71],fontSize:6.3,headerSize:6.1});
+}
+
+function addForecastReport(pdf){
+  const plan=filteredPlan(proposedPlan),rm=resourceMetrics(plan),cfg=rm.cfg,ag=rm.ag,resources=focusedResourceNames(Object.keys(rm.metrics)).sort();
+  const summaryRows=resources.map(r=>{ const m=rm.metrics[r]||{avg:0,peak:0,totalMD:0,capacity:0}; return [r,`${m.avg.toFixed(0)}%`,`${m.peak.toFixed(0)}%`,m.totalMD.toFixed(2),m.capacity.toFixed(2),Math.max(0,m.capacity-m.totalMD).toFixed(2),reportStatus(m.peak,cfg)]; });
+  pdfTable(pdf,{title:"Resource Load Forecast - Summary",meta:`${reportPeriodLine(plan)} | ${reportFiltersLine()}`,columns:["Resource","Average","Peak","Demand MD","Capacity MD","Available MD","Status"],rows:summaryRows,widths:[125,75,75,90,90,95,115],fontSize:7.5,cellStyle:({col,value})=>col===6?{fill:reportStatusColor(value)}:null});
+  const chunkSize=8;
+  for(let start=0;start<ag.periods.length;start+=chunkSize){
+    const chunk=ag.periods.slice(start,start+chunkSize),labels=chunk.map(pk=>periodLabel(pk,cfg.scale));
+    const rows=resources.map(r=>[r,...chunk.map(pk=>{const x=ag.result[r]?.[pk]||{load:0}; return x.load?`${Math.round(x.load)}%`:"-";})]);
+    const widths=[90,...chunk.map(()=>Math.max(58,(pdf.w-2*pdf.m-90)/Math.max(1,chunk.length)))];
+    pdfTable(pdf,{title:`Resource Load Forecast${ag.periods.length>chunkSize?` - ${labels[0]} to ${labels[labels.length-1]}`:""}`,meta:`${reportPeriodLine(plan)} | ${reportFiltersLine()}`,columns:["Resource",...labels],rows,widths,fontSize:7,headerSize:6.5,cellStyle:({col,value})=>{ if(col===0||value==="-") return null; const load=Number(String(value).replace("%",""))||0; return {fill:load>cfg.over?[254,226,226]:load>=cfg.high?[254,243,199]:load>=cfg.under?[219,234,254]:[209,250,229],text:load>cfg.over?[153,27,27]:[30,64,98]}; }});
+  }
+}
+
+function addGanttReport(pdf){
+  const plan=filteredPlan(proposedPlan),horizon=ganttHorizon(plan),conflicts=conflictingAssignments(plan),assignments=[];
+  plan.filter(p=>p.start&&p.end&&p.resources?.length).forEach(p=>{
+    p.resources.forEach(r=>{
+      if(el.resourceFilter.value&&r!==el.resourceFilter.value) return;
+      const st=parseDate(p.start),en=parseDate(p.end);
+      if(!st||!en||en<horizon.start||st>horizon.end) return;
+      assignments.push({p,r,start:st,end:en,conflict:conflicts.has(p.uid)});
+    });
+  });
+  assignments.sort((a,b)=>a.r.localeCompare(b.r)||(a.start-b.start)||(a.p.projectId||"").localeCompare(b.p.projectId||""));
+
+  const scope=el.ganttScope.value==="forecast"?"Forecast Horizon":"Full Register";
+  const meta=`Gantt scope: ${scope} | ${fmtDate(iso(horizon.start))} to ${fmtDate(iso(horizon.end))} | ${reportFiltersLine()}`;
+  const span=Math.max(86400000,horizon.end-horizon.start);
+  const x0=pdf.m,resourceW=78,projectW=205,dateW=82,timelineW=pdf.w-2*pdf.m-resourceW-projectW-dateW;
+  const rowH=30,headerH=27,pad=3;
+
+  function timelineX(d){ return x0+resourceW+projectW+dateW+Math.max(0,Math.min(1,(d-horizon.start)/span))*timelineW; }
+  function tickData(){
+    const out=[]; for(let i=0;i<=4;i++){ const dt=new Date(horizon.start.getTime()+span*i/4); out.push({dt,x:x0+resourceW+projectW+dateW+timelineW*i/4}); } return out;
+  }
+  function drawTableHeader(y){
+    const cols=[["Resource",resourceW],["Project / JIRA",projectW],["Dates",dateW],["Timeline",timelineW]];
+    let x=x0;
+    cols.forEach(([label,w])=>{ pdf.fillRect(x,y,w,headerH,[232,240,249]); pdf.strokeRect(x,y,w,headerH,[204,217,232],.45); pdf.text(x+pad,y+17,label,7,true,[41,75,112]); x+=w; });
+    const ticks=tickData();
+    ticks.forEach((t,i)=>{ if(i>0&&i<ticks.length-1) pdf.line(t.x,y,t.x,pdf.h-pdf.bottom,[226,232,240],.35); pdf.text(t.x,y+9,fmtDate(iso(t.dt)),5.7,false,[100,116,139],i===0?"left":i===ticks.length-1?"right":"center"); });
+    return y+headerH;
+  }
+
+  let y=pdf.addPage("Project–Resource Gantt",meta);
+  y=drawTableHeader(y);
+  if(!assignments.length){ pdf.text(x0,y+18,"No dated resource assignments match the current Gantt scope and filters.",8,false,pdf.colors.muted); return; }
+
+  assignments.forEach((a,idx)=>{
+    if(y+rowH>pdf.h-pdf.bottom-6){ y=pdf.addPage("Project–Resource Gantt (continued)",meta); y=drawTableHeader(y); }
+    const fill=idx%2?[250,252,255]:[255,255,255];
+    let x=x0;
+    [resourceW,projectW,dateW,timelineW].forEach(w=>{ pdf.fillRect(x,y,w,rowH,fill); pdf.strokeRect(x,y,w,rowH,[226,232,240],.35); x+=w; });
+    pdf.text(x0+pad,y+17,a.r,7,true,[23,32,51]);
+    const project=`${a.p.projectId||"No JIRA"} - ${a.p.projectName||"Untitled"}`;
+    const lines=pdf.wrap(project,projectW-2*pad,6.4,false).slice(0,2);
+    lines.forEach((ln,j)=>pdf.text(x0+resourceW+pad,y+11+j*9,ln,6.4,j===0,[23,32,51]));
+    pdf.text(x0+resourceW+projectW+pad,y+11,fmtDate(a.p.start),6.2,false,[71,85,105]);
+    pdf.text(x0+resourceW+projectW+pad,y+21,fmtDate(a.p.end),6.2,false,[71,85,105]);
+
+    const tlX=x0+resourceW+projectW+dateW;
+    const clippedStart=a.start<horizon.start?horizon.start:a.start,clippedEnd=a.end>horizon.end?horizon.end:a.end;
+    let bx=timelineX(clippedStart),br=timelineX(clippedEnd);
+    let bw=Math.max(5,br-bx+3);
+    if(bx+bw>tlX+timelineW) bw=Math.max(3,tlX+timelineW-bx);
+    const barColor=a.conflict?[239,68,68]:[37,99,235];
+    pdf.fillRect(bx,y+9,bw,12,barColor);
+    if(a.conflict) pdf.strokeRect(bx,y+9,bw,12,[185,28,28],.8);
+    y+=rowH;
+  });
+
+  y+=7;
+  if(y+26<pdf.h-pdf.bottom){
+    pdf.fillRect(x0,y,12,8,[37,99,235]); pdf.text(x0+17,y+7,"Planned assignment",6.5,false,[71,85,105]);
+    pdf.fillRect(x0+120,y,12,8,[239,68,68]); pdf.text(x0+137,y+7,"Overlapping/conflicting assignment",6.5,false,[71,85,105]);
+  }
+}
+
+function addOverlapReport(pdf){
+  const plan=filteredPlan(proposedPlan),cfg=getConfig(),groups=overlapWindows(plan).filter(g=>!el.resourceFilter.value||g.resource===el.resourceFilter.value);
+  const rows=groups.map(g=>{ const status=g.peak>cfg.over?"Overloaded":"Overlap"; return [g.resource,g.projectNames.join("; "),`${fmtDate(g.start)} - ${fmtDate(g.end)}`,`${g.avg.toFixed(0)}% (Peak ${g.peak.toFixed(0)}%)`,`${g.totalMD.toFixed(2)} MD`,`${g.gap.toFixed(2)} MD`,status]; });
+  pdfTable(pdf,{title:"Overlapped Load Forecast",meta:`${reportPeriodLine(plan)} | ${reportFiltersLine()}`,columns:["Resource","Projects","Overlapping Period","Combined Load","Total Effort","Capacity Gap","Status"],rows,widths:[75,250,105,100,75,75,90],fontSize:7,headerSize:6.5,cellStyle:({col,value})=>col===6?{fill:value==="Overloaded"?[254,226,226]:[254,243,199],text:value==="Overloaded"?[153,27,27]:[146,64,14]}:null});
+}
+
+function showPdfProgress(message){ const n=$("pdfExportProgress"); if(!n) return; n.textContent=message; n.classList.add("show"); }
+function hidePdfProgress(){ const n=$("pdfExportProgress"); if(n) n.classList.remove("show"); }
+function buildPdfReport(kind){
+  const reportTitle="Project Status and Resource Engagement Plan Dashboard",pdf=new ManagementPDF(reportTitle),date=localDateStamp(); let filename;
+  if(kind==="full"){ addManagementSummary(pdf); addRegisterReport(pdf); addForecastReport(pdf); addGanttReport(pdf); addOverlapReport(pdf); filename=`Resource_Planning_Dashboard_${date}.pdf`; }
+  else if(kind==="register"){ addRegisterReport(pdf); filename=`Project_Resource_Register_${date}.pdf`; }
+  else if(kind==="forecast"){ addForecastReport(pdf); filename=`Resource_Load_Forecast_${date}.pdf`; }
+  else if(kind==="gantt"){ addGanttReport(pdf); filename=`Project_Resource_Gantt_${date}.pdf`; }
+  else if(kind==="overlap"){ addOverlapReport(pdf); filename=`Overlapped_Load_Forecast_${date}.pdf`; }
+  else { addManagementSummary(pdf); filename=`Management_Resource_Summary_${date}.pdf`; }
+  return {pdf,filename};
+}
+function exportPdfReport(kind){
+  const resolved=kind==="selected"?(activeReportSegment||"summary"):kind;
+  showPdfProgress(`Preparing ${resolved==="full"?"full dashboard":resolved} PDF report...`);
+  setTimeout(()=>{ try{ const {pdf,filename}=buildPdfReport(resolved); pdf.save(filename); toast(`PDF exported: ${filename}`); }catch(e){ console.error(e); toast(`PDF export failed: ${e.message}`); }finally{ hidePdfProgress(); const menu=$("pdfExportMenu"); if(menu) menu.open=false; } },20);
+}
+
+function setActiveReportSegment(segment,node=null){
+  activeReportSegment=segment||"summary";
+  document.querySelectorAll(".pdf-report-active").forEach(n=>n.classList.remove("pdf-report-active"));
+  if(node&&node.classList) node.classList.add("pdf-report-active");
+}
+
+function positionPdfExportMenu(){
+  const menu=$("pdfExportMenu");
+  const list=menu?.querySelector(".pdf-export-list");
+  const summary=menu?.querySelector("summary");
+  if(!menu?.open||!list||!summary) return;
+
+  const buttonRect=summary.getBoundingClientRect();
+  const appRect=document.querySelector(".app")?.getBoundingClientRect();
+
+  // Keep the menu inside the dashboard's actually visible content area.
+  // This prevents it from sliding underneath ChatGPT/browser sidebars.
+  const viewportLeft=8;
+  const viewportRight=Math.max(viewportLeft+220,window.innerWidth-8);
+  const safeLeft=Math.max(viewportLeft,Math.min(appRect?.left??viewportLeft,viewportRight-220));
+  const safeRight=Math.min(viewportRight,Math.max(appRect?.right??viewportRight,safeLeft+220));
+  const availableWidth=Math.max(220,safeRight-safeLeft);
+  const menuWidth=Math.min(310,availableWidth);
+
+  list.style.width=`${Math.round(menuWidth)}px`;
+  list.style.maxWidth=`${Math.round(menuWidth)}px`;
+  list.style.right="auto";
+
+  let left=buttonRect.right-menuWidth;
+  left=Math.max(safeLeft,Math.min(left,safeRight-menuWidth));
+
+  // Position below the button unless there is more usable room above.
+  let top=buttonRect.bottom+8;
+  const menuHeight=Math.min(list.scrollHeight||list.offsetHeight||320,Math.floor(window.innerHeight*.70));
+  const bottomLimit=window.innerHeight-8;
+  if(top+menuHeight>bottomLimit && buttonRect.top-menuHeight-8>=8){
+    top=buttonRect.top-menuHeight-8;
+  }else{
+    top=Math.min(top,Math.max(8,bottomLimit-menuHeight));
+  }
+
+  list.style.left=`${Math.round(left)}px`;
+  list.style.top=`${Math.round(top)}px`;
+}
+
+const pdfMenu=$("pdfExportMenu");
+if(pdfMenu){
+  pdfMenu.addEventListener("toggle",()=>{
+    if(pdfMenu.open) requestAnimationFrame(positionPdfExportMenu);
+  });
+}
+window.addEventListener("resize",()=>{ if(pdfMenu?.open) positionPdfExportMenu(); });
+window.addEventListener("scroll",()=>{ if(pdfMenu?.open) positionPdfExportMenu(); },true);
+document.addEventListener("click",e=>{
+  const seg=e.target.closest?.("[data-report-segment]"); if(seg) setActiveReportSegment(seg.dataset.reportSegment,seg);
+  const btn=e.target.closest?.("[data-pdf-export]"); if(btn){ e.preventDefault(); e.stopPropagation(); exportPdfReport(btn.dataset.pdfExport); return; }
+  const menu=$("pdfExportMenu"); if(menu?.open&&!e.target.closest?.("#pdfExportMenu")) menu.open=false;
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ const menu=$("pdfExportMenu"); if(menu?.open){ menu.open=false; menu.querySelector("summary")?.focus(); } }
+});
+/* =================== End Professional PDF Report Engine =================== */
+
+["scale","projectFilter","resourceFilter","roleFilter","statusFilter","testStatusFilter","priorityFilter","dateFrom","dateTo","effortModel","ganttScope"].forEach(id=>el[id].addEventListener("change",()=>{ pinnedRegisterUids.clear(); renderAll(); }));
+["capacity","underThreshold","highThreshold","overThreshold"].forEach(id=>el[id].addEventListener("change",()=>renderAll()));
+el.searchFilter.addEventListener("input",()=>{ pinnedRegisterUids.clear(); renderAll(); });
+el.projectSearch.addEventListener("input",()=>{ pinnedRegisterUids.clear(); renderAll(); });
+el.registerSearch.addEventListener("input",renderRegister);
+el.resetFilters.addEventListener("click",()=>{
+  ["projectFilter","resourceFilter","roleFilter","statusFilter","testStatusFilter","priorityFilter"].forEach(id=>el[id].value="");
+  ["projectSearch","searchFilter","dateFrom","dateTo","registerSearch"].forEach(id=>el[id].value="");
+  pinnedRegisterUids.clear();
+  renderAll();
+});
+
+el.addResource.addEventListener("click",addNewResource);
+el.removeResourceBtn.addEventListener("click",removeSelectedResource);
+el.addTestStatusBtn.addEventListener("click",addNewTestStatus);
+el.removeTestStatusBtn.addEventListener("click",removeSelectedTestStatus);
+el.addSourceStatusBtn.addEventListener("click",addNewSourceStatus);
+el.removeSourceStatusBtn.addEventListener("click",removeSelectedSourceStatus);
+el.applyScenario.addEventListener("click",()=>{ currentPlan=clone(proposedPlan); refreshFilterOptions(); renderAll(); toast("Proposed plan applied to dashboard Current Plan. Source workbook is unchanged."); });
+el.resetSource.addEventListener("click",()=>{ currentPlan=clone(sourceBaseline); proposedPlan=clone(sourceBaseline); addedResources=[]; customTestStatuses=[...new Set(sourceBaseline.map(p=>p.testStatus).filter(v=>v&&!DEFAULT_TEST_STATUSES.includes(v)))]; removedTestStatuses.clear(); customSourceStatuses=[...new Set(sourceBaseline.map(p=>p.status).filter(Boolean))]; removedSourceStatuses.clear(); pinnedRegisterUids.clear(); refreshFilterOptions(); renderAll(); scheduleAutoSave(true); updateSourceBaselineStatus(); toast(`Dashboard restored to maintained Source (${sourceBaseline.length} rows).`); });
+el.cancelAdd.addEventListener("click",clearCreateProjectForm);
+el.saveNewProject.addEventListener("click",addProject);
+el.addRegisterRow.addEventListener("click",addNewRegisterRow);
+el.exportScenario.addEventListener("click",exportScenario);
+
+el.downloadDemoTemplateBtn.addEventListener("click",downloadDemoProjectRegister);
+el.updateSourceBaselineBtn.addEventListener("click",updateSourceBaselineFromProposed);
+el.downloadSourceBtn.addEventListener("click",downloadCurrentSourceCsv);
+el.importRegisterBtn.addEventListener("click",()=>el.importRegisterFile.click());
+el.importRegisterFile.addEventListener("change",()=>handleImportRegister(el.importRegisterFile.files?.[0]));
+el.confirmImportBtn.addEventListener("click",applyStagedImport);
+el.setImportAsSourceBtn.addEventListener("click",setStagedImportAsSource);
+el.cancelImportBtn.addEventListener("click",cancelStagedImport);
+el.savePlanBtn.addEventListener("click",savePlanJson);
+el.loadPlanBtn.addEventListener("click",()=>el.loadPlanFile.click());
+el.loadPlanFile.addEventListener("change",()=>loadPlanJsonFile(el.loadPlanFile.files?.[0]));
+el.clearLocalDataBtn.addEventListener("click",clearLocalDashboardData);
+el.autoSaveToggle.addEventListener("change",()=>{
+  const store=safeLocalStorage();
+  if(store) store.setItem(AUTO_SAVE_ENABLED_KEY,el.autoSaveToggle.checked?"1":"0");
+  if(el.autoSaveToggle.checked){ persistenceReady=true; saveAutoState(); }
+  else { clearTimeout(autoSaveTimer); setAutoSaveStatus("Auto-save is off. Existing local saved data is retained until Clear Local Data."); }
+});
+
+persistenceReady=true;
+restoreSourceBaselineFromLocal();
+if(!restoreAutoState()){
+  currentPlan=clone(sourceBaseline);
+  proposedPlan=clone(sourceBaseline);
+  refreshFilterOptions();
+  renderAll();
+}
+updateSourceBaselineStatus();
+
+
+</script>
+</body>
+</html>
