@@ -1,0 +1,10 @@
+{
+  "name": "resource-planning-dashboard-server",
+  "private": true,
+  "description": "Shared-plan server for the Project Status and Resource Engagement Plan Dashboard (no npm dependencies).",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "backup": "node --disable-warning=ExperimentalWarning backup.js"
+  }
+}

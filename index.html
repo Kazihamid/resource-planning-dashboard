@@ -550,6 +550,22 @@ input,select{min-height:38px;height:38px;padding:7px 9px;border-radius:8px}
 }
 .kpis,.filters,.panel{position:relative;z-index:1}
 
+/* ===== Shared plan (server mode) ===== */
+.shared-badge{display:none;align-self:center;white-space:nowrap}
+.shared-badge.show{display:inline-flex;gap:6px;align-items:center}
+.shared-badge i{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block}
+.shared-badge.saving i{background:#facc15}.shared-badge.error i{background:#f87171}.shared-badge.viewer i{background:#93c5fd}
+.shared-banner{display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#eff6ff;border:1px solid #bfdbfe;border-radius:11px;padding:10px 12px;color:#1e3a8a;font-size:12px;margin-bottom:10px}
+.shared-banner.show{display:flex}
+.shared-banner.warn{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+.history-card{border-left:4px solid #4f46e5}
+.history-table{border-collapse:collapse;width:100%;min-width:760px}
+.history-table th,.history-table td{padding:7px 8px;border-bottom:1px solid #eef2f7;font-size:11px;vertical-align:top;text-align:left}
+.history-table th{background:#f8fafc;color:var(--muted);font-size:10px;text-transform:uppercase}
+.history-table details summary{cursor:pointer;color:#1d4ed8;font-size:10px;margin-top:3px}
+.history-table ul{margin:4px 0 0;padding-left:16px;color:#475569;font-size:10px;line-height:1.45}
+.history-table .row-actions button{white-space:nowrap}
+
 </style>
 </head>
 <body>
@@ -559,6 +575,7 @@ input,select{min-height:38px;height:38px;padding:7px 9px;border-radius:8px}
       <h1>Project Status and Resource Engagement Plan Dashboard</h1>
     </div>
     <div class="toolbar">
+      <span class="source-badge shared-badge" id="sharedBadge" aria-live="polite"><i></i><span id="sharedBadgeText"></span></span>
       <details class="pdf-export-menu" id="pdfExportMenu">
         <summary aria-label="Open PDF export menu">Export PDF</summary>
         <div class="pdf-export-list">
@@ -575,6 +592,7 @@ input,select{min-height:38px;height:38px;padding:7px 9px;border-radius:8px}
     </div>
   </header>
 
+  <div id="sharedBanner" class="shared-banner"><span id="sharedBannerText"></span><button type="button" class="btn" id="sharedBannerBtn">Load latest shared plan</button></div>
   <div id="scenarioBanner" class="scenario-banner"></div>
 
   <section class="kpis" id="kpis" data-report-segment="summary"></section>
@@ -645,6 +663,12 @@ input,select{min-height:38px;height:38px;padding:7px 9px;border-radius:8px}
             <div class="validation-list" id="validationMessages"></div>
             <div class="validation-actions"><button class="btn-success" id="confirmImportBtn" disabled>Import Valid Rows</button><button class="btn-source" id="setImportAsSourceBtn" disabled>Set Valid Rows as Source</button><button class="btn" id="cancelImportBtn">Cancel Import</button></div>
           </div>
+        </div>
+        <div class="setup-card wide history-card" id="historyCard" hidden>
+          <h3>Change History</h3>
+          <div class="desc">Every save to the shared plan, with who made it and what changed. Editors can restore an earlier version; the restore is itself recorded here.</div>
+          <div class="setup-actions" style="margin:0 0 8px"><button type="button" class="btn" id="refreshHistoryBtn">Refresh</button></div>
+          <div class="scroll" style="max-height:420px"><table class="history-table"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>What changed</th><th>Version</th></tr></thead><tbody id="historyBody"></tbody></table></div>
         </div>
         <div class="setup-card wide">
           <h3>Create Project</h3>
@@ -796,6 +820,10 @@ let proposedPlan = structuredClone(sourceBaseline);
 let addedResources = [];
 let uidCounter = 1;
 let pinnedRegisterUids = new Set();
+// Shared-plan (server) mode. Stays disabled when the page is opened as a file or from static hosting.
+const shared = {enabled:false,user:"",canEdit:false,version:0,updatedAt:null,updatedBy:"",lastSyncedJson:null,
+  saving:false,again:false,pendingAction:"edit",timer:null,pollTimer:null,retryTimer:null,state:"ok",notice:""};
+function newUid(){ return `NEW${Date.now().toString(36)}${Math.random().toString(36).slice(2,7)}`; }
 
 const $ = id => document.getElementById(id);
 const ids = ["scale","projectFilter","projectSearch","resourceFilter","roleFilter","statusFilter","testStatusFilter","priorityFilter","searchFilter","dateFrom","dateTo","capacity","effortModel","underThreshold","highThreshold","overThreshold","ganttScope","resetFilters","newResource","addResource","removeResourceSelect","removeResourceBtn","newTestStatus","addTestStatusBtn","removeTestStatusSelect","removeTestStatusBtn","applyScenario","resetSource","saveNewProject","cancelAdd","exportScenario","registerSearch","addRegisterRow","newSourceStatus","addSourceStatusBtn","removeSourceStatusSelect","removeSourceStatusBtn","roleStandardList","setupProjectName","importRegisterBtn","importRegisterFile","savePlanBtn","loadPlanBtn","loadPlanFile","clearLocalDataBtn","autoSaveToggle","autoSaveStatus","importSummary","downloadDemoTemplateBtn","importValidationPanel","validationTitle","validationFile","validationStats","validationMessages","confirmImportBtn","cancelImportBtn","updateSourceBaselineBtn","downloadSourceBtn","sourceBaselineStatus","setImportAsSourceBtn"];
@@ -830,9 +858,10 @@ function setAutoSaveStatus(message,isError=false){
 function updateSourceBaselineStatus(){
   if(!el.sourceBaselineStatus) return;
   const when=sourceBaselineUpdatedAt?` · updated ${new Date(sourceBaselineUpdatedAt).toLocaleString()}`:" · embedded default";
-  el.sourceBaselineStatus.textContent=`${sourceBaseline.length} source row(s)${when}. Reset to Source restores this baseline.`;
+  el.sourceBaselineStatus.textContent=`${sourceBaseline.length} source row(s)${when}. Reset to Source restores this baseline${shared.enabled?" for everyone using the shared plan":""}.`;
 }
 function persistSourceBaseline(){
+  if(shared.enabled){ updateSourceBaselineStatus(); return true; } // saved with the shared plan
   const store=safeLocalStorage();
   if(!store){ updateSourceBaselineStatus(); return false; }
   try{
@@ -917,6 +946,7 @@ function setSourceBaseline(records,{message="Source baseline updated."}={}){
   removedSourceStatuses.clear();
   pinnedRegisterUids.clear();
   uidCounter=sourceBaseline.length+1;
+  shared.pendingAction="set-source-baseline";
   refreshFilterOptions();
   renderAll();
   scheduleAutoSave(true);
@@ -1064,6 +1094,7 @@ function autoSaveEnabled(){
   return !!el.autoSaveToggle?.checked;
 }
 function scheduleAutoSave(immediate=false){
+  if(shared.enabled){ scheduleSharedSync(immediate); return; }
   if(!persistenceReady||!autoSaveEnabled()) return;
   clearTimeout(autoSaveTimer);
   autoSaveTimer=setTimeout(saveAutoState,immediate?0:350);
@@ -1130,6 +1161,8 @@ async function loadPlanJsonFile(file){
   if(!file) return;
   try{
     const state=JSON.parse(await file.text());
+    if(!confirmShared(`Replace the shared plan for everyone with the plan in ${file.name}?`)) return;
+    shared.pendingAction="load-plan-file";
     applyDashboardState(state);
     setAutoSaveStatus("Loaded JSON plan and saved it as the working browser plan.");
     toast(`Plan loaded: ${file.name}`);
@@ -1140,6 +1173,7 @@ async function loadPlanJsonFile(file){
   }
 }
 function clearLocalDashboardData(){
+  if(shared.enabled){ reloadSharedPlan(); return; }
   if(!confirm("Clear browser-saved working data and return to the maintained Source baseline? The Source baseline itself will not be deleted.")) return;
   const store=safeLocalStorage();
   if(store){ store.removeItem(AUTO_SAVE_KEY); store.removeItem(AUTO_SAVE_ENABLED_KEY); }
@@ -1351,6 +1385,8 @@ function cancelStagedImport(){
 }
 function applyStagedImport(){
   if(!stagedImport||!stagedImport.validRecords.length) return;
+  if(!confirmShared(`Replace the shared plan for everyone with ${stagedImport.validRecords.length} imported row(s)?`)) return;
+  shared.pendingAction="import-register";
   const records=stagedImport.validRecords.map(normalizeProjectRecord);
   currentPlan=records;proposedPlan=clone(records);addedResources=[];
   customTestStatuses=[...new Set(proposedPlan.map(p=>p.testStatus).filter(v=>v&&!DEFAULT_TEST_STATUSES.includes(v)))];
@@ -2090,7 +2126,7 @@ function saveRegisterRow(uid){
   p.draft=false; pinnedRegisterUids.add(uid); renderAll(true); toast("Register row saved to the Proposed Plan.");
 }
 function addNewRegisterRow(){
-  const uid=`NEW${uidCounter++}`;
+  const uid=newUid();
   proposedPlan.unshift({uid,sourceRow:null,projectGroup:el.projectFilter.value||"HRMS",projectId:"",projectName:"",pm:"",effortMD:null,rawEffort:null,devRelease:null,start:null,end:null,uatRelease:null,plannedGoLive:null,resources:[],resourceRoles:[],role:"SQA Engineer",priority:"Unspecified",status:"",testStatus:allTestStatuses().includes("Not Started")?"Not Started":(allTestStatuses()[0]||""),remarks:"Added from Project & Resource Register",isSource:false,draft:true});
   pinnedRegisterUids.add(uid); refreshFilterOptions(); renderAll(); toast("New editable row added. Complete the record and click Save.");
 }
@@ -2241,7 +2277,7 @@ function addProject(){
     .find(v=>v.toLowerCase()===name.toLowerCase());
   const projectGroup=existing||name;
 
-  const uid=`NEW${uidCounter++}`;
+  const uid=newUid();
   proposedPlan.unshift({
     uid,sourceRow:null,projectGroup,projectId:"",projectName:"",pm:"",
     effortMD:null,rawEffort:null,devRelease:null,start:null,end:null,uatRelease:null,plannedGoLive:null,
@@ -2628,8 +2664,8 @@ el.addTestStatusBtn.addEventListener("click",addNewTestStatus);
 el.removeTestStatusBtn.addEventListener("click",removeSelectedTestStatus);
 el.addSourceStatusBtn.addEventListener("click",addNewSourceStatus);
 el.removeSourceStatusBtn.addEventListener("click",removeSelectedSourceStatus);
-el.applyScenario.addEventListener("click",()=>{ currentPlan=clone(proposedPlan); refreshFilterOptions(); renderAll(); toast("Proposed plan applied to dashboard Current Plan. Source workbook is unchanged."); });
-el.resetSource.addEventListener("click",()=>{ currentPlan=clone(sourceBaseline); proposedPlan=clone(sourceBaseline); addedResources=[]; customTestStatuses=[...new Set(sourceBaseline.map(p=>p.testStatus).filter(v=>v&&!DEFAULT_TEST_STATUSES.includes(v)))]; removedTestStatuses.clear(); customSourceStatuses=[...new Set(sourceBaseline.map(p=>p.status).filter(Boolean))]; removedSourceStatuses.clear(); pinnedRegisterUids.clear(); refreshFilterOptions(); renderAll(); scheduleAutoSave(true); updateSourceBaselineStatus(); toast(`Dashboard restored to maintained Source (${sourceBaseline.length} rows).`); });
+el.applyScenario.addEventListener("click",()=>{ shared.pendingAction="apply-proposed"; currentPlan=clone(proposedPlan); refreshFilterOptions(); renderAll(); toast("Proposed plan applied to dashboard Current Plan. Source workbook is unchanged."); });
+el.resetSource.addEventListener("click",()=>{ if(!confirmShared(`Reset the shared plan for everyone to the Source baseline (${sourceBaseline.length} rows)?`)) return; shared.pendingAction="reset-to-source"; currentPlan=clone(sourceBaseline); proposedPlan=clone(sourceBaseline); addedResources=[]; customTestStatuses=[...new Set(sourceBaseline.map(p=>p.testStatus).filter(v=>v&&!DEFAULT_TEST_STATUSES.includes(v)))]; removedTestStatuses.clear(); customSourceStatuses=[...new Set(sourceBaseline.map(p=>p.status).filter(Boolean))]; removedSourceStatuses.clear(); pinnedRegisterUids.clear(); refreshFilterOptions(); renderAll(); scheduleAutoSave(true); updateSourceBaselineStatus(); toast(`Dashboard restored to maintained Source (${sourceBaseline.length} rows).`); });
 el.cancelAdd.addEventListener("click",clearCreateProjectForm);
 el.saveNewProject.addEventListener("click",addProject);
 el.addRegisterRow.addEventListener("click",addNewRegisterRow);
@@ -2654,15 +2690,225 @@ el.autoSaveToggle.addEventListener("change",()=>{
   else { clearTimeout(autoSaveTimer); setAutoSaveStatus("Auto-save is off. Existing local saved data is retained until Clear Local Data."); }
 });
 
-persistenceReady=true;
-restoreSourceBaselineFromLocal();
-if(!restoreAutoState()){
-  currentPlan=clone(sourceBaseline);
-  proposedPlan=clone(sourceBaseline);
-  refreshFilterOptions();
-  renderAll();
+/* ===================== Shared Plan (server mode) ===================== */
+// When the dashboard is served by server/server.js, everyone works on one shared plan stored on the server.
+// Opened as a file or from static hosting, the dashboard keeps its original browser-only behaviour.
+const SHARED_POLL_MS=15000;
+const SHARED_ACTION_LABELS={"edit":"Edit","initial-publish":"First publish","import-register":"Import register","set-source-baseline":"Update source baseline","apply-proposed":"Apply proposed","reset-to-source":"Reset to source","load-plan-file":"Load plan file"};
+const SHARED_FIELD_LABELS={projectGroup:"Project",projectId:"JIRA ID",projectName:"Task Details",pm:"PM",start:"Start",end:"End",effortMD:"Effort MD",rawEffort:"Raw effort",resources:"Resources",resourceRoles:"Roles",role:"Role",testStatus:"Test Status",status:"Project / Source Status",priority:"Priority",remarks:"Remarks",draft:"Draft",isSource:"Source row"};
+const SHARED_LIST_LABELS={proposedPlan:"Proposed",currentPlan:"Current",sourceBaseline:"Source",addedResources:"Resource pool",customTestStatuses:"Test statuses",removedTestStatuses:"Removed test statuses",customSourceStatuses:"Source statuses",removedSourceStatuses:"Removed source statuses"};
+
+async function sharedApi(method,url,body){
+  const res=await fetch(url,{method,credentials:"same-origin",cache:"no-store",
+    headers:{"Accept":"application/json","X-Requested-With":"dashboard",...(body?{"Content-Type":"application/json"}:{})},
+    body:body?JSON.stringify(body):undefined});
+  let data=null; try{ data=await res.json(); }catch(e){}
+  if(!res.ok){ const err=new Error(data?.error||`Server returned ${res.status}.`); err.status=res.status; err.body=data; throw err; }
+  return data;
 }
-updateSourceBaselineStatus();
+async function detectSharedServer(){
+  if(location.protocol!=="http:"&&location.protocol!=="https:") return null;
+  const ctrl=new AbortController(), timer=setTimeout(()=>ctrl.abort(),4000);
+  try{
+    const res=await fetch("api/me",{credentials:"same-origin",cache:"no-store",signal:ctrl.signal,headers:{"Accept":"application/json"}});
+    if(res.status===401){ const d=await res.json().catch(()=>null); return {error:d?.error||"Not signed in."}; }
+    if(!res.ok) return null;
+    const d=await res.json().catch(()=>null);
+    return d&&typeof d.user==="string"?d:null;
+  }catch(e){ return null; }
+  finally{ clearTimeout(timer); }
+}
+function confirmShared(message){ return !shared.enabled||!shared.canEdit||confirm(`${message}\n\nThis changes the shared plan that all users see. The change is recorded in Change History and can be restored from there.`); }
+function sharedSnapshot(){ const s=buildDashboardState(); delete s.config; delete s.savedAt; return s; }
+function isLocallyDirty(){ return shared.lastSyncedJson!==null&&JSON.stringify(sharedSnapshot())!==shared.lastSyncedJson; }
+function applySharedState(state){
+  sourceBaseline=(Array.isArray(state.sourceBaseline)?state.sourceBaseline:[]).map(normalizeProjectRecord).map(p=>({...p,isSource:true,draft:false}));
+  sourceBaselineUpdatedAt=state.sourceBaselineUpdatedAt||null;
+  applyDashboardState({...state,config:dashboardConfigSnapshot()},{fromAutoSave:true}); // keep this user's filters
+  updateSourceBaselineStatus();
+  shared.lastSyncedJson=JSON.stringify(sharedSnapshot());
+  if(shared.enabled&&!shared.canEdit) updateViewerBanner();
+}
+function setSharedStatus(kind){
+  shared.state=kind;
+  const badge=$("sharedBadge"); if(!badge||!shared.enabled) return;
+  const role=shared.canEdit?"Editor":"Viewer";
+  const text=kind==="saving"?"Saving…":kind==="error"?"Not saved — retrying":`Shared plan v${shared.version}`;
+  badge.className=`source-badge shared-badge show ${kind==="saving"?"saving":kind==="error"?"error":shared.canEdit?"":"viewer"}`;
+  $("sharedBadgeText").textContent=`${shared.user} · ${role} · ${text}`;
+  badge.title=shared.updatedBy?`Last saved by ${shared.updatedBy} at ${new Date(shared.updatedAt).toLocaleString()}`:"No shared version saved yet";
+  if(shared.enabled) setAutoSaveStatus(kind==="error"?"Shared plan: last change not saved yet — retrying.":`Shared plan v${shared.version}${shared.updatedBy?` · last saved by ${shared.updatedBy} at ${new Date(shared.updatedAt).toLocaleString()}`:""}.`,kind==="error");
+}
+function showSharedBanner(text,{warn=false,button=true}={}){
+  const b=$("sharedBanner");
+  $("sharedBannerText").textContent=text;
+  $("sharedBannerBtn").style.display=button?"":"none";
+  b.classList.toggle("warn",warn); b.classList.add("show");
+}
+function hideSharedBanner(){ $("sharedBanner").classList.remove("show"); }
+function updateViewerBanner(){
+  if(shared.canEdit) return;
+  if(isLocallyDirty()) showSharedBanner("View-only access: changes you make here stay in this browser tab and are not saved to the shared plan.",{warn:true});
+  else hideSharedBanner();
+}
+function scheduleSharedSync(immediate=false){
+  if(!shared.canEdit){ updateViewerBanner(); return; }
+  clearTimeout(shared.timer);
+  shared.timer=setTimeout(syncSharedPlan,immediate?0:600);
+}
+async function syncSharedPlan(){
+  if(!shared.enabled||!shared.canEdit) return;
+  if(shared.saving){ shared.again=true; return; }
+  const snap=sharedSnapshot(), json=JSON.stringify(snap);
+  if(json===shared.lastSyncedJson){ shared.pendingAction="edit"; return; }
+  const action=shared.pendingAction||"edit"; shared.pendingAction="edit";
+  shared.saving=true; clearTimeout(shared.retryTimer); shared.retryTimer=null; setSharedStatus("saving");
+  try{
+    const r=await sharedApi("PUT","api/plan",{baseVersion:shared.version,action,state:snap});
+    const changedMeanwhile=JSON.stringify(sharedSnapshot())!==json;
+    if(r.merged&&changedMeanwhile){
+      shared.again=true; // keep the old base version so the next save merges the newer local edits too
+    }else{
+      shared.version=r.version; shared.updatedAt=r.updatedAt; shared.updatedBy=r.updatedBy;
+      if(r.merged&&r.state){ applySharedState(r.state); toast("Saved. Changes others made at the same time were merged in."); }
+      else shared.lastSyncedJson=json;
+    }
+    hideSharedBanner(); setSharedStatus("ok");
+    if($("setupPanel").open) loadSharedHistory();
+  }catch(e){
+    if(e.status===409&&e.body?.state){
+      shared.version=e.body.version; shared.updatedAt=e.body.updatedAt; shared.updatedBy=e.body.updatedBy;
+      applySharedState(e.body.state); setSharedStatus("ok");
+      showSharedBanner(e.message,{warn:true,button:false}); toast("Your last change was not saved because of a conflict.");
+    }else if(e.status===403){
+      shared.canEdit=false; setSharedStatus("viewer"); showSharedBanner(e.message,{warn:true});
+    }else if(e.status&&e.status<500){
+      setSharedStatus("error"); showSharedBanner(`Not saved: ${e.message}`,{warn:true});
+    }else{
+      shared.pendingAction=action; setSharedStatus("error");
+      shared.retryTimer=setTimeout(syncSharedPlan,10000);
+    }
+  }finally{
+    shared.saving=false;
+    if(shared.again){ shared.again=false; scheduleSharedSync(true); }
+  }
+}
+async function loadLatestShared(message){
+  const r=await sharedApi("GET","api/plan");
+  shared.version=r.version; shared.updatedAt=r.updatedAt; shared.updatedBy=r.updatedBy;
+  if(r.state) applySharedState(r.state);
+  hideSharedBanner(); setSharedStatus("ok");
+  if(message) toast(message);
+  if($("setupPanel").open) loadSharedHistory();
+}
+async function reloadSharedPlan(){
+  if(isLocallyDirty()&&!confirm("Discard your unsaved changes and load the latest shared plan?")) return;
+  try{ await loadLatestShared("Latest shared plan loaded."); }
+  catch(e){ toast(`Could not load the shared plan: ${e.message}`); }
+}
+async function pollSharedPlan(){
+  if(!shared.enabled||shared.saving||document.hidden) return;
+  try{
+    const meta=await sharedApi("GET","api/plan/version");
+    if(meta.version===shared.version){ if(shared.state==="error"&&!shared.retryTimer) setSharedStatus("ok"); return; }
+    if(isLocallyDirty()){
+      if(shared.canEdit) scheduleSharedSync(true); // the save merges the newer version in
+      else showSharedBanner(`${meta.updatedBy} saved a newer shared plan (v${meta.version}). Your local changes are not saved.`,{warn:true});
+      return;
+    }
+    await loadLatestShared(`Shared plan updated by ${meta.updatedBy}.`);
+  }catch(e){ if(!shared.saving) setSharedStatus("error"); }
+}
+
+function sharedDetailLine(d){
+  const list=SHARED_LIST_LABELS[d.list]||d.list;
+  if(d.change==="set") return `${list}: ${[...(d.added||[]).map(v=>`+${v}`),...(d.removed||[]).map(v=>`-${v}`)].join(", ")}`;
+  const name=d.projectId||d.projectName||d.uid;
+  if(d.change!=="changed") return `${list}: ${name} ${d.change}`;
+  const fields=Object.entries(d.fields||{}).map(([f,v])=>`${SHARED_FIELD_LABELS[f]||f}: ${v.from||"(blank)"} → ${v.to||"(blank)"}`);
+  return `${list}: ${name} — ${fields.join("; ")}`;
+}
+async function loadSharedHistory(){
+  if(!shared.enabled) return;
+  const body=$("historyBody");
+  try{
+    const {entries}=await sharedApi("GET","api/audit?limit=100");
+    body.innerHTML=entries.length?entries.map(e=>{
+      const action=SHARED_ACTION_LABELS[e.action]||(/^restore-v\d+$/.test(e.action)?`Restore v${e.action.slice(9)}`:e.action);
+      const lines=(e.details||[]).slice(0,40).map(sharedDetailLine);
+      const more=(e.details||[]).length>40?`<li>… ${(e.details.length-40)} more</li>`:"";
+      const canRestore=shared.canEdit&&e.restorable&&e.version!==shared.version;
+      return `<tr><td>${escapeHtml(new Date(e.at).toLocaleString())}</td><td>${escapeHtml(e.user)}</td><td>${escapeHtml(action)}</td>
+        <td>${escapeHtml(e.summary)}${lines.length?`<details><summary>Details</summary><ul>${lines.map(l=>`<li>${escapeHtml(l)}</li>`).join("")}${more}</ul></details>`:""}</td>
+        <td>v${e.version??"—"}${e.version===shared.version?' <span class="small">(current)</span>':""}${canRestore?`<div class="row-actions" style="margin-top:4px"><button type="button" class="btn" data-restore-version="${e.version}">Restore</button></div>`:""}</td></tr>`;
+    }).join(""):`<tr><td colspan="5" class="empty">No changes recorded yet.</td></tr>`;
+  }catch(e){ body.innerHTML=`<tr><td colspan="5" class="empty">Could not load change history: ${escapeHtml(e.message)}</td></tr>`; }
+}
+async function restoreSharedVersion(v){
+  if(!confirm(`Restore the shared plan to version ${v} for everyone?\n\nThe restore is saved as a new version, so it can itself be undone from Change History.`)) return;
+  try{
+    if(isLocallyDirty()) await syncSharedPlan();
+    await loadLatestShared();
+    const r=await sharedApi("GET",`api/versions/${v}`);
+    const latestJson=shared.lastSyncedJson;
+    applySharedState(r.state);
+    shared.lastSyncedJson=latestJson; // so the restored plan is saved as a change on top of the latest version
+    shared.pendingAction=`restore-v${v}`;
+    await syncSharedPlan();
+    toast(`Shared plan restored to version ${v}.`);
+  }catch(e){ toast(`Restore failed: ${e.message}`); }
+}
+
+function startLocalMode(){
+  persistenceReady=true;
+  restoreSourceBaselineFromLocal();
+  if(!restoreAutoState()){
+    currentPlan=clone(sourceBaseline);
+    proposedPlan=clone(sourceBaseline);
+    refreshFilterOptions();
+    renderAll();
+  }
+  updateSourceBaselineStatus();
+}
+async function startSharedMode(me){
+  let latest;
+  try{ latest=await sharedApi("GET","api/plan"); }
+  catch(e){ startLocalMode(); showSharedBanner(`Shared plan unavailable (${e.message}). Showing this browser's local copy; changes are not shared.`,{warn:true,button:false}); return; }
+  shared.user=me.user; shared.canEdit=!!me.canEdit;
+  if(latest.state){
+    shared.enabled=true; persistenceReady=true;
+    shared.version=latest.version; shared.updatedAt=latest.updatedAt; shared.updatedBy=latest.updatedBy;
+    applySharedState(latest.state);
+  }else{
+    // Empty database: start from this browser's data. The first editor to open the dashboard publishes it.
+    startLocalMode();
+    shared.enabled=true;
+    applySharedState(sharedSnapshot());
+    if(shared.canEdit){ shared.lastSyncedJson=null; shared.pendingAction="initial-publish"; syncSharedPlan(); }
+    else showSharedBanner("No shared plan has been published yet. An editor needs to open the dashboard once to publish it.",{warn:true,button:false});
+  }
+  el.autoSaveToggle.closest("label").style.display="none";
+  el.clearLocalDataBtn.textContent="Reload Shared Plan";
+  $("historyCard").hidden=false;
+  setSharedStatus("ok");
+  shared.pollTimer=setInterval(pollSharedPlan,SHARED_POLL_MS);
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) pollSharedPlan(); });
+  window.addEventListener("beforeunload",e=>{ if(shared.canEdit&&(shared.saving||isLocallyDirty())){ e.preventDefault(); e.returnValue=""; } });
+}
+$("sharedBannerBtn").addEventListener("click",reloadSharedPlan);
+$("refreshHistoryBtn").addEventListener("click",loadSharedHistory);
+$("historyBody").addEventListener("click",e=>{ const b=e.target.closest("[data-restore-version]"); if(b) restoreSharedVersion(Number(b.dataset.restoreVersion)); });
+$("setupPanel").addEventListener("toggle",()=>{ if($("setupPanel").open&&shared.enabled) loadSharedHistory(); });
+
+(async()=>{
+  const me=await detectSharedServer();
+  if(me&&!me.error) await startSharedMode(me);
+  else{
+    startLocalMode();
+    if(me?.error) showSharedBanner(`Shared plan sign-in failed: ${me.error} Showing this browser's local copy.`,{warn:true,button:false});
+  }
+})();
+/* =================== End Shared Plan =================== */
 
 
 </script>

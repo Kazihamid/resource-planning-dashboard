@@ -1,0 +1,4 @@
+# Shared-plan server: live data, backups and site-specific settings stay out of Git
+server/data/
+server/backups/
+server/config.json
