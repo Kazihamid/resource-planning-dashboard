@@ -20,7 +20,11 @@ const { DatabaseSync } = require("node:sqlite");
 const APP_ROOT = path.resolve(__dirname, "..");
 const CONFIG_PATH = process.env.DASHBOARD_CONFIG || path.join(__dirname, "config.json");
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
-const ROW_LISTS = ["sourceBaseline", "currentPlan", "proposedPlan"];
+const ROW_LISTS = ["sourceBaseline", "currentPlan", "proposedPlan", "deployedLive"];
+const OPTIONAL_ROW_LISTS = new Set(["deployedLive"]); // older dashboards do not send this list yet
+// Actions that can create a new entry by hand; only these are checked for duplicates (imports and restores of
+// whole plans may legitimately carry old data and are never blocked).
+const DUPLICATE_CHECKED_ACTIONS = new Set(["edit", "restore-deployed"]);
 const STRING_SETS = ["addedResources", "customTestStatuses", "removedTestStatuses", "customSourceStatuses", "removedSourceStatuses"];
 
 /* ---------- Configuration (re-read automatically when config.json changes) ---------- */
@@ -179,8 +183,8 @@ const fmt = v => Array.isArray(v) ? v.join(", ") : (v === null || v === undefine
 function diffStates(prev, next) {
   const details = [];
   const parts = [];
-  const listNames = { proposedPlan: "Proposed plan", currentPlan: "Current plan", sourceBaseline: "Source baseline" };
-  for (const list of ["proposedPlan", "currentPlan", "sourceBaseline"]) {
+  const listNames = { proposedPlan: "Proposed plan", currentPlan: "Current plan", sourceBaseline: "Source baseline", deployedLive: "Deployed in Live" };
+  for (const list of ["proposedPlan", "currentPlan", "sourceBaseline", "deployedLive"]) {
     const a = rowsByUid(prev && prev[list]), b = rowsByUid(next && next[list]);
     let added = 0, removed = 0, changed = 0;
     const changedLabels = [];
@@ -223,9 +227,42 @@ function diffStates(prev, next) {
   return { summary: parts.join(" · ") || "No data changes", details: details.slice(0, 2000) };
 }
 
+/* ---------- Duplicate entries (same rules as the dashboard's findDuplicate) ----------
+   Two rows clash when they share a JIRA ID, or share Project + Task Details + Start + End.
+   The register and the Deployed in Live list are checked together. */
+function duplicateIndex(state) {
+  const idx = new Map();
+  for (const list of ["proposedPlan", "deployedLive"]) {
+    for (const r of (state && Array.isArray(state[list]) ? state[list] : [])) {
+      if (!r || r.draft) continue;
+      const keys = new Map();
+      const jira = String(r.projectId || "").trim().toLowerCase();
+      if (jira) keys.set(`j|${jira}`, `JIRA ID "${String(r.projectId).trim()}"`);
+      const group = String(r.projectGroup || "").trim().toLowerCase();
+      const name = String(r.projectName || "").trim().toLowerCase().replace(/\s+/g, " ");
+      if (group && name && r.start && r.end) keys.set(`c|${group}|${name}|${r.start}|${r.end}`, `"${String(r.projectName).trim()}" with the same project and dates`);
+      for (const [k, label] of keys) {
+        const e = idx.get(k) || { count: 0, label };
+        e.count++;
+        idx.set(k, e);
+      }
+    }
+  }
+  return idx;
+}
+// A clash that is new in `next` (not already present in `prev`), or null.
+function newDuplicate(prev, next) {
+  const before = duplicateIndex(prev);
+  for (const [k, e] of duplicateIndex(next)) {
+    if (e.count > 1 && !(before.get(k) && before.get(k).count > 1)) return `Duplicate entry: ${e.label} already exists in the register or in Deployed in Live.`;
+  }
+  return null;
+}
+
 function validateState(state) {
   if (!state || typeof state !== "object" || Array.isArray(state)) return "Plan state must be an object.";
   for (const list of ROW_LISTS) {
+    if (state[list] === undefined && OPTIONAL_ROW_LISTS.has(list)) continue;
     if (!Array.isArray(state[list])) return `Plan state is missing the ${list} list.`;
     const uids = new Set();
     for (const row of state[list]) {
@@ -315,6 +352,8 @@ function savePlan(user, body) {
     const latest = q.latest.get();
     const latestVersion = latest ? latest.version : 0;
     const theirs = latest ? JSON.parse(latest.state_json) : null;
+    // A dashboard page from before the Deployed in Live feature does not send that list; keep what is stored.
+    if (mine.deployedLive === undefined && theirs && Array.isArray(theirs.deployedLive)) mine.deployedLive = theirs.deployedLive;
     let next = mine, merged = false;
 
     if (baseVersion !== latestVersion) {
@@ -330,6 +369,14 @@ function savePlan(user, body) {
         db.exec("ROLLBACK");
         if (e instanceof MergeConflict) return [409, { error: `Not saved: ${e.message} The latest version has been loaded; please redo your change.`, ...planMeta(latest), state: theirs }];
         throw e;
+      }
+    }
+
+    if (theirs && DUPLICATE_CHECKED_ACTIONS.has(action)) {
+      const clash = newDuplicate(theirs, next);
+      if (clash) {
+        db.exec("ROLLBACK");
+        return [409, { error: `Not saved: ${clash} The latest version has been loaded; please review it and redo your change.`, ...planMeta(latest), state: theirs }];
       }
     }
 

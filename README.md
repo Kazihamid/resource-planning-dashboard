@@ -40,6 +40,26 @@ The dashboard is a standalone browser application. No application server, databa
 - CSV export
 - Demo Project Register template
 
+## Register features added in this update
+
+**Project Status column.** The register now shows a *Project Status* dropdown for every row (it is the same field the filter calls "Project Status" and the old CSV called "Project / Source Status"). Other values come from Setup > Project Status Setup. `Deployed in Live` is built in and cannot be removed.
+
+**Export selected rows.** Tick the checkbox at the start of any register row (the box in the header selects every visible row). *Export PDF*, *Export to Excel* and *Export to CSV* then contain only the ticked rows, and the buttons show how many are selected. With nothing ticked they export everything, as before. Selected rows stay selected while you search or filter; the line under the register tells you if some are hidden by filters. Excel files are real `.xlsx` workbooks (dates are date cells, header frozen, filters on) and can be imported back into the dashboard.
+
+**Deployed in Live.** Choosing `Deployed in Live` as a row's Project Status asks for the release date and then moves the project out of the register into the *Deployed in Live* section below it. Deployed projects no longer count toward resource load, forecasts, overlaps or the Gantt. In that section you can change a release date, search, export to Excel/CSV, or **Restore** a project back to the register (it returns with its previous status). *Reset to Source* never brings a deployed project back.
+Importing a file works the same way: rows whose *Project Status* is `Deployed in Live` go straight to the Deployed in Live section (optional *Release Date* column, today if blank).
+
+**Duplicate check.** An entry is a duplicate when another row in the register or in Deployed in Live has the same **JIRA ID** (case-insensitive), or the same **Project + Task Details + Start + End**. Editing a row into a duplicate is refused with a message, a new row cannot be saved as a duplicate, restoring a project that would clash is refused, and importing a row whose JIRA ID is already deployed is reported as an error. Rows that are already duplicates in older data are marked with a red *Duplicate* badge and do not block unrelated edits. Bulk actions (import, load plan, reset, update source) are not blocked.
+
+**Shared plan (Option D) and multiple users.** The Deployed in Live list is part of the shared plan, so every user sees the same register and the same deployed projects within about 15 seconds, and every move is recorded in Change History (actions *Moved to Deployed in Live* / *Restored from Deployed in Live*) and can be restored. The server also rejects a duplicate that two people add at the same moment: the second save is refused, the latest plan is loaded, and the person is asked to redo the change.
+**To get this, replace both `index.html` and `server/server.js` and restart the server task** (keep `server/config.json` and `server/data/`). An older server still accepts the new dashboard but has no duplicate protection on the server side.
+
+A matching Excel template is in `templates/Project_Register_Template_v3.xlsx` (adds Priority, Project Status and Release Date columns, dropdowns fed from a Lists sheet, and a Data Check sheet). The built-in *Download Demo Project Register* button still downloads the previous layout, which remains valid.
+
+## Google Sheet sharing (easiest way to share one plan, no server)
+
+If you cannot run the Node server (Option D), the dashboard can keep one shared plan in a Google Sheet that you own. See **GOOGLE_SHEET_SETUP.md** for the 6 steps. In short: paste `google-sheet/Code.gs` into the Sheet's Apps Script, set your secret key, deploy it as a Web app (Anyone), paste the Web app URL and key into **Setup > Google Sheet sharing**, then send teammates the invite link. The Sheet gets readable **Project Register** and **Deployed in Live** tabs, saves keep the same duplicate check, merge rules and Change History as the server, and a viewer key can be added for view-only people. The Node server and the Google Sheet are two alternatives; use one of them.
+
 ## Important data behavior when hosted
 
 Hosting the HTML provides one shared URL, but the current **Auto-Save** and maintained **Source Baseline** use browser local storage.
