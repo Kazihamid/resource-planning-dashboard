@@ -607,7 +607,8 @@ button.has-ico,.row-actions button,[data-dep-restore],.hn-btn{display:inline-fle
 #registerPdfBtn:hover,#exportDeployedPdf:hover,.btn-pdf:hover{background:#ffe4e6!important}
 #exportExcel,#exportDeployedExcel{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857}
 #exportExcel:hover,#exportDeployedExcel:hover{background:#d1fae5}
-#addRegisterRow{background:linear-gradient(135deg,#38a8f8,#6366f1);border-color:#4f8ff0}
+#addRegisterRow{background:linear-gradient(135deg,#1d6fd8,#4f46e5);border:1px solid #1e40af;color:#fff;font-weight:800;text-shadow:0 1px 1px rgba(15,23,42,.25)}
+#addRegisterRow:hover{background:linear-gradient(135deg,#1a62c0,#4338ca)}
 .row-actions .btn-primary{background:#e0e7ff;border:1px solid #c7d2fe;color:#3730a3}
 .row-actions .btn-primary:hover{background:#c7d2fe}
 .row-actions .btn-danger{background:#fff1f2;border:1px solid #fecdd3;color:#be123c}
@@ -647,6 +648,13 @@ button.has-ico,.row-actions button,[data-dep-restore],.hn-btn{display:inline-fle
 .hn-chip{min-height:26px;padding:3px 10px;font-size:10px;border-radius:999px;background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6}
 .hn-chip:hover{background:#ede9fe}
 .hn-tip{font-size:10px;color:var(--muted);text-transform:none;font-weight:600;letter-spacing:0}
+
+.pl-all{background:#fff1f2;border:1px solid #fb7185;color:#dc2626;font-weight:800}
+.pl-all::before{background:#ef4444}
+.pl-all b{opacity:.8;color:#dc2626}
+.pl-all:hover{background:#ffe4e6}
+.hn-chip.on{background:#6d28d9;border-color:#6d28d9;color:#fff}
+.project-table th.hn-target,.deployed-table th.hn-target{background:#ddd6fe!important;color:#4c1d95;box-shadow:inset 0 -3px 0 #6d28d9}
 </style>
 </head>
 <body>
@@ -826,7 +834,7 @@ button.has-ico,.row-actions button,[data-dep-restore],.hn-btn{display:inline-fle
     <div class="register-toolbar">
       <div class="register-tools">
         <div class="register-search field"><label>Search Project in Register</label><input id="registerSearch" placeholder="JIRA ID or task details..."></div>
-        <button class="btn-primary" id="addRegisterRow">+ Add New</button>
+        <button class="btn-primary" id="addRegisterRow">Add New</button>
       </div>
       <div class="small" id="registerCount"></div>
       <div class="selection-bar"><span class="small" id="selectionInfo"></span><button type="button" class="btn" id="clearSelectionBtn" hidden>Clear selection</button></div>
@@ -2345,10 +2353,15 @@ function decorateIcons(){
 
 function renderProjectLegend(rows){
   const box=$("projectLegend"); if(!box) return;
-  const counts={}; rows.forEach(p=>{ const n=p.projectGroup||inferProjectGroup(p); if(n) counts[n]=(counts[n]||0)+1; });
+  const counts={}; proposedPlan.forEach(p=>{ const n=p.projectGroup||inferProjectGroup(p); if(n) counts[n]=(counts[n]||0)+1; });
   const q=el.registerSearch.value.trim().toLowerCase();
-  const names=Object.keys(counts).sort((a,b)=>a.localeCompare(b));
-  box.innerHTML=names.length?`<span class="pl-title">Projects:</span>`+names.map(n=>`<button type="button" class="pl-chip${q===n.toLowerCase()?" on":""}" data-pl="${escapeAttr(n)}" ${projectStyleAttr(n)} title="Click to show only ${escapeAttr(n)}; click again to show all">${escapeHtml(n)} <b>${counts[n]}</b></button>`).join(""):"";
+  let names=Object.keys(counts).sort((a,b)=>a.localeCompare(b));
+  const picked=names.filter(n=>n.toLowerCase()===q);
+  if(picked.length) names=picked;   // a project is selected: show only it, plus Show All
+  const showAll=picked.length?`<button type="button" class="pl-chip pl-all" data-pl-all="1" title="Clear the filter and show every project">Show All <b>${proposedPlan.length}</b></button>`:"";
+  box.innerHTML=`<span class="pl-title">Projects:</span>`
+    +names.map(n=>`<button type="button" class="pl-chip${q===n.toLowerCase()?" on":""}" data-pl="${escapeAttr(n)}" ${projectStyleAttr(n)} title="Show only ${escapeAttr(n)}">${escapeHtml(n)} <b>${counts[n]}</b></button>`).join("")
+    +showAll;
 }
 
 function buildHNav(wrap,opts){
@@ -2366,13 +2379,29 @@ function buildHNav(wrap,opts){
   wrap.parentNode.insertBefore(nav,wrap);
   const range=nav.querySelector(".hn-range");
   const maxScroll=()=>Math.max(0,wrap.scrollWidth-wrap.clientWidth);
-  const frozenW=()=>{ if(!opts.frozen) return 0; const th=wrap.querySelector("thead th:nth-child(2)"); return th?th.offsetLeft+th.offsetWidth:0; };
-  const sync=()=>{ const m=maxScroll(); nav.classList.toggle("no-overflow",m<=2); range.value=m?Math.round(wrap.scrollLeft/m*1000):0; };
+  // Sticky (frozen) cells report a shifting offsetLeft, so positions are measured with getBoundingClientRect instead.
+  const frozenW=()=>{ if(!opts.frozen) return 0; return [1,2].reduce((w,i)=>{ const th=wrap.querySelector(`thead th:nth-child(${i})`); return w+(th?th.getBoundingClientRect().width:0); },0); };
+  const colTarget=th=>{ const wr=wrap.getBoundingClientRect(), tr=th.getBoundingClientRect(); return Math.max(0,Math.min(maxScroll(),Math.round(tr.left-wr.left+wrap.scrollLeft-frozenW()-6))); };
+  const chips=[...nav.querySelectorAll(".hn-chip")];
+  let lock=null;   // {i: index of the clicked jump button, th: its column header}
+  const unlock=()=>{ if(!lock) return; lock.th&&lock.th.classList.remove("hn-target"); lock=null; };
+  const sync=()=>{
+    const m=maxScroll(); nav.classList.toggle("no-overflow",m<=2); range.value=m?Math.round(wrap.scrollLeft/m*1000):0;
+    // highlight the jump button: the one just clicked (until the user scrolls by hand), otherwise the column group at the left edge
+    let active=-1;
+    if(lock){ chips.forEach((c,i)=>c.classList.toggle("on",i===lock.i)); return; }
+    chips.forEach((c,i)=>{ const th=wrap.querySelector(`thead th:nth-child(${Number(c.dataset.col)+1})`); if(th&&colTarget(th)<=wrap.scrollLeft+8) active=i; });
+    if(m&&wrap.scrollLeft>=m-2) active=chips.length-1;
+    if(wrap.scrollLeft<=2) active=-1;
+    chips.forEach((c,i)=>c.classList.toggle("on",i===active));
+  };
   const go=x=>{ wrap.scrollTo?wrap.scrollTo({left:x,behavior:"smooth"}):(wrap.scrollLeft=x); };
   wrap.addEventListener("scroll",sync,{passive:true});
-  range.addEventListener("input",()=>{ wrap.scrollLeft=maxScroll()*(Number(range.value)/1000); });
+  ["wheel","touchstart","mousedown","keydown"].forEach(ev=>wrap.addEventListener(ev,()=>{ unlock(); },{passive:true}));
+  range.addEventListener("input",()=>{ unlock(); wrap.scrollLeft=maxScroll()*(Number(range.value)/1000); });
   nav.addEventListener("click",e=>{
     const b=e.target.closest("button"); if(!b) return;
+    if(b.dataset.col===undefined) unlock();
     const step=Math.max(200,Math.round(wrap.clientWidth*.7));
     if(b.dataset.hn==="first") go(0);
     else if(b.dataset.hn==="last") go(maxScroll());
@@ -2380,7 +2409,11 @@ function buildHNav(wrap,opts){
     else if(b.dataset.hn==="right") go(Math.min(maxScroll(),wrap.scrollLeft+step));
     else if(b.dataset.col!==undefined){
       const th=wrap.querySelector(`thead th:nth-child(${Number(b.dataset.col)+1})`);
-      if(th) go(Math.max(0,th.offsetLeft-frozenW()-6));
+      if(th){
+        unlock(); go(colTarget(th));
+        lock={i:chips.indexOf(b),th}; th.classList.add("hn-target");   // columns near the right edge all end at the same scroll position, so remember which one was asked for
+        chips.forEach((c,i)=>c.classList.toggle("on",i===lock.i));
+      }
     }
   });
   if(typeof ResizeObserver!=="undefined"){ const ro=new ResizeObserver(sync); ro.observe(wrap); const t=wrap.querySelector("table"); if(t) ro.observe(t); }
@@ -2393,6 +2426,8 @@ function initRegisterUi(){
   buildHNav(document.querySelector("#deployedSection .table-wrap"),{frozen:false,jumps:[{label:"Resources",col:4},{label:"Release Date",col:6},{label:"Moved By",col:7},{label:"Action",col:8}]});
   const lg=$("projectLegend");
   if(lg) lg.addEventListener("click",e=>{
+    const all=e.target.closest("[data-pl-all]");
+    if(all){ el.registerSearch.value=""; renderRegister(); return; }
     const b=e.target.closest("[data-pl]"); if(!b) return;
     const name=b.dataset.pl, cur=el.registerSearch.value.trim().toLowerCase();
     el.registerSearch.value=cur===name.toLowerCase()?"":name;
