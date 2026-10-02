@@ -417,8 +417,8 @@ input,select{min-height:38px;height:38px;padding:7px 9px;border-radius:8px}
 .setup-panel{margin:12px 0 16px;overflow:hidden;border-top:4px solid #64748b;background:linear-gradient(180deg,#fff,#fbfcfe)}
 .setup-panel>summary{list-style:none;cursor:pointer;padding:14px 16px;font-size:15px;font-weight:850;color:#243b53;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .setup-panel>summary::-webkit-details-marker{display:none}
-.setup-panel>summary:after{content:"Open setup";font-size:10px;font-weight:750;color:#64748b;background:#f1f5f9;border:1px solid #dbe4ee;border-radius:999px;padding:5px 8px}
-.setup-panel[open]>summary:after{content:"Close setup"}
+.setup-panel>summary:after{content:"Open Setup";font-size:10px;font-weight:750;color:#64748b;background:#f1f5f9;border:1px solid #dbe4ee;border-radius:999px;padding:5px 8px}
+.setup-panel[open]>summary:after{content:"Close Setup"}
 .setup-body{padding:0 15px 15px}
 .setup-grid{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:10px}
 .setup-card{border:1px solid #dfe7f1;border-radius:12px;background:#fff;padding:12px;min-width:0}
@@ -655,6 +655,11 @@ button.has-ico,.row-actions button,[data-dep-restore],.hn-btn{display:inline-fle
 .pl-all:hover{background:#ffe4e6}
 .hn-chip.on{background:#6d28d9;border-color:#6d28d9;color:#fff}
 .project-table th.hn-target,.deployed-table th.hn-target{background:#ddd6fe!important;color:#4c1d95;box-shadow:inset 0 -3px 0 #6d28d9}
+
+.sheet-link{background:#ecfdf5;border-color:#a7f3d0;color:#047857;text-decoration:none;cursor:pointer}
+.sheet-link:hover{background:#d1fae5}
+#sheetOpenBtn{background:#e7f8ee;border:1px solid #a7e3bf;color:#166534}
+#sheetOpenBtn:hover{background:#d1fae5}
 </style>
 </head>
 <body>
@@ -664,6 +669,7 @@ button.has-ico,.row-actions button,[data-dep-restore],.hn-btn{display:inline-fle
       <h1>Project Status and Resource Engagement Plan Dashboard</h1>
     </div>
     <div class="toolbar">
+      <a class="source-badge sheet-link" id="sheetHeaderLink" href="#" target="_blank" rel="noopener" hidden>Open Google Sheet</a>
       <span class="source-badge shared-badge" id="sharedBadge" aria-live="polite"><i></i><span id="sharedBadgeText"></span></span>
       <details class="pdf-export-menu" id="pdfExportMenu">
         <summary aria-label="Open PDF export menu">Export PDF</summary>
@@ -761,12 +767,14 @@ button.has-ico,.row-actions button,[data-dep-restore],.hn-btn{display:inline-fle
             <div class="field"><label>Web app URL (or paste an invite link)</label><input id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off"></div>
             <div class="field"><label>Access key</label><input id="sheetKey" type="password" placeholder="EDIT_KEY from the script" autocomplete="off"></div>
             <div class="field"><label>Your name (shown in Change History)</label><input id="sheetName" placeholder="e.g. Hamid" autocomplete="off"></div>
+            <div class="field" style="grid-column:1/-1"><label>Google Sheet link (optional - adds an Open Google Sheet button)</label><input id="sheetOpenUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit" autocomplete="off"></div>
           </div>
           <div class="data-actions">
             <button class="btn-primary" id="sheetConnectBtn">Connect</button>
             <button class="btn" id="sheetInviteBtn" hidden>Copy invite link</button>
             <button class="btn" id="sheetViewLinkBtn" hidden>Copy view-only link</button>
             <button class="btn-clear-local" id="sheetDisconnectBtn" hidden>Disconnect</button>
+            <button class="btn" id="sheetOpenBtn" hidden>Open Google Sheet</button>
           </div>
           <div class="field" id="sheetLinkRow" hidden style="margin-top:8px"><label>Link to send to your team</label><input id="sheetLinkOut" readonly></div>
           <div class="import-summary" id="sheetStatus"></div>
@@ -3302,13 +3310,15 @@ initRegisterUi();
 /* The shared-plan code further below talks to "api/..." paths. In Google Sheet mode those same calls are sent to
    the owner's Google Apps Script web app (see google-sheet/Code.gs) instead of to a Node server. */
 const SHEET_CFG_KEY="prd_google_sheet_cfg_v1";
-let sheetCfg=null;        // {u: web app URL, k: access key, name: the person's name}
+let sheetCfg=null;        // {u: web app URL, k: access key, name: the person's name, s: optional Google Sheet address}
+const KEEP_SETUP_KEY="prd_keep_setup_open";
+function isSheetDocUrl(u){ return /^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+/.test(String(u||"")); }
 let sheetMemoryCfg=null;  // fallback when browser storage is unavailable
 function b64urlEncode(s){ const bytes=new TextEncoder().encode(s); let bin=""; bytes.forEach(b=>{ bin+=String.fromCharCode(b); }); return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 function b64urlDecode(s){ const t=String(s).replace(/-/g,"+").replace(/_/g,"/"); const bin=atob(t+"=".repeat((4-t.length%4)%4)); return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))); }
 function parseInviteCode(text){
   const m=/(?:^|[#&?\s])sheet=([A-Za-z0-9_-]+)/.exec(String(text||"")); if(!m) return null;
-  try{ const d=JSON.parse(b64urlDecode(m[1])); return d&&typeof d.u==="string"&&typeof d.k==="string"?{u:d.u,k:d.k}:null; }catch(e){ return null; }
+  try{ const d=JSON.parse(b64urlDecode(m[1])); return d&&typeof d.u==="string"&&typeof d.k==="string"?{u:d.u,k:d.k,s:isSheetDocUrl(d.s)?d.s:""}:null; }catch(e){ return null; }
 }
 function readStoredSheetCfg(){
   try{ const raw=safeLocalStorage()?.getItem(SHEET_CFG_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.u&&d.k) return d; } }catch(e){}
@@ -3322,7 +3332,7 @@ function loadSheetCfg(){
   const invite=parseInviteCode(location.hash);
   if(invite){
     const prev=readStoredSheetCfg();
-    sheetCfg={u:invite.u,k:invite.k,name:(prev&&prev.u===invite.u&&prev.name)||""};
+    sheetCfg={u:invite.u,k:invite.k,name:(prev&&prev.u===invite.u&&prev.name)||"",s:invite.s||(prev&&prev.u===invite.u&&prev.s)||""};
     saveSheetCfg();
     try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}   // keep the key out of the address bar
     return;
@@ -3379,6 +3389,8 @@ function renderSheetCard(){
   const st=$("sheetStatus"); if(!st) return;
   const on=!!sheetCfg;
   if(!sheetCardFilled){ sheetCardFilled=true; if(on){ $("sheetUrl").value=sheetCfg.u; $("sheetName").value=sheetCfg.name||""; $("sheetKey").placeholder="Saved in this browser (leave blank to keep)"; } }
+  { const ou=$("sheetOpenUrl"); if(on&&sheetCfg.s&&ou&&!ou.value) ou.value=sheetCfg.s; }
+  { const has=on&&isSheetDocUrl(sheetCfg.s); $("sheetOpenBtn").hidden=!has; const hl=$("sheetHeaderLink"); if(hl){ hl.hidden=!has; if(has) hl.href=sheetCfg.s; } }
   $("sheetDisconnectBtn").hidden=!on; $("sheetInviteBtn").hidden=!on; $("sheetViewLinkBtn").hidden=!(on&&shared.enabled&&shared.canEdit);
   $("sheetConnectBtn").textContent=on?"Save changes":"Connect";
   if(!on) st.innerHTML="<b>Not connected.</b> Data stays in this browser only. Follow the 6 steps in the README, section \"Google Sheet sharing\", then paste the Web app URL and your access key here.";
@@ -3387,7 +3399,7 @@ function renderSheetCard(){
 }
 function sheetInviteLink(cfg){
   const base=location.href.split("#")[0];
-  return `${base}#sheet=${b64urlEncode(JSON.stringify({u:cfg.u,k:cfg.k}))}`;
+  return `${base}#sheet=${b64urlEncode(JSON.stringify({u:cfg.u,k:cfg.k,s:isSheetDocUrl(cfg.s)?cfg.s:undefined}))}`;
 }
 async function showAndCopyLink(link,what){
   $("sheetLinkRow").hidden=false; $("sheetLinkOut").value=link; $("sheetLinkOut").select?.();
@@ -3397,26 +3409,40 @@ async function showAndCopyLink(link,what){
 }
 async function connectSheet(){
   let u=$("sheetUrl").value.trim(), k=$("sheetKey").value.trim(), name=$("sheetName").value.trim().slice(0,60);
-  const invite=parseInviteCode(u); if(invite){ u=invite.u; k=invite.k; }
+  let openUrl=($("sheetOpenUrl").value||"").trim();
+  const invite=parseInviteCode(u); if(invite){ u=invite.u; k=invite.k; if(!openUrl&&invite.s) openUrl=invite.s; }
   if(!k&&sheetCfg&&sheetCfg.u===u) k=sheetCfg.k;
   const msg=$("sheetStatus");
   if(!/^https:\/\/script\.google(?:usercontent)?\.com\//.test(u)){ msg.innerHTML="<b>Check the Web app URL.</b> It should start with https://script.google.com/ and end with /exec."; return; }
   if(!k){ msg.innerHTML="<b>Enter the access key</b> (the EDIT_KEY you set in the script), or paste an invite link into the URL box."; return; }
+  if(openUrl&&!isSheetDocUrl(openUrl)){ msg.innerHTML="<b>Check the Google Sheet link.</b> It should look like https://docs.google.com/spreadsheets/d/.../edit - or leave it empty."; return; }
   if(!name){ msg.innerHTML="<b>Enter your name.</b> It is shown in Change History next to your changes."; return; }
   msg.textContent="Checking the connection...";
   try{
     const me=await sheetCall("GET",{action:"me"},null,{u,k});
-    sheetCfg={u,k,name}; saveSheetCfg();
+    const prevS=(sheetCfg&&sheetCfg.u===u&&sheetCfg.s)||"";
+    sheetCfg={u,k,name,s:openUrl||(isSheetDocUrl(me.sheetUrl)?me.sheetUrl:"")||prevS}; saveSheetCfg();
+    keepSetupOpen();
     msg.innerHTML=`<b>Connected</b> (${me.canEdit?"can edit":"view only"}). Loading the shared plan...`;
     setTimeout(()=>{ try{ location.reload(); }catch(e){} },300);
   }catch(e){ msg.innerHTML=`<b>Could not connect:</b> ${escapeHtml(e.message)}`; }
 }
+/* Saving or disconnecting reloads the page; remember that the Setup panel was open so it is not collapsed. */
+function keepSetupOpen(){ try{ sessionStorage.setItem(KEEP_SETUP_KEY,"1"); }catch(e){} }
+function restoreSetupOpen(){
+  let flag=false; try{ flag=sessionStorage.getItem(KEEP_SETUP_KEY)==="1"; sessionStorage.removeItem(KEEP_SETUP_KEY); }catch(e){}
+  if(!flag) return;
+  const panel=$("setupPanel"); if(panel) panel.open=true;
+  setTimeout(()=>{ try{ $("sheetCard").scrollIntoView({block:"center"}); }catch(e){} },150);
+}
 function disconnectSheet(){
   if(!confirm("Disconnect this browser from the shared Google Sheet? The shared data stays in the Sheet; this browser goes back to its own local data.")) return;
   sheetCfg=null; saveSheetCfg();
+  keepSetupOpen();
   try{ location.reload(); }catch(e){}
 }
 $("sheetConnectBtn").addEventListener("click",connectSheet);
+$("sheetOpenBtn").addEventListener("click",()=>{ if(sheetCfg&&isSheetDocUrl(sheetCfg.s)) window.open(sheetCfg.s,"_blank","noopener"); });
 $("sheetDisconnectBtn").addEventListener("click",disconnectSheet);
 $("sheetInviteBtn").addEventListener("click",()=>{ if(sheetCfg) showAndCopyLink(sheetInviteLink(sheetCfg),"Invite link"); });
 $("sheetViewLinkBtn").addEventListener("click",()=>{
@@ -3425,6 +3451,7 @@ $("sheetViewLinkBtn").addEventListener("click",()=>{
 });
 loadSheetCfg();
 renderSheetCard();
+restoreSetupOpen();
 /* =================== End Google Sheet sharing =================== */
 
 /* ===================== Shared Plan (server mode) ===================== */
@@ -3446,7 +3473,7 @@ async function sharedApi(method,url,body){
 }
 async function detectSharedServer(){
   if(sheetCfg){
-    try{ const d=await sheetCall("GET",{action:"me"}); return {user:sheetCfg.name||"Guest",canEdit:!!d.canEdit,authMode:"sheet"}; }
+    try{ const d=await sheetCall("GET",{action:"me"}); if(d.sheetUrl&&!sheetCfg.s&&isSheetDocUrl(d.sheetUrl)){ sheetCfg.s=d.sheetUrl; saveSheetCfg(); } return {user:sheetCfg.name||"Guest",canEdit:!!d.canEdit,authMode:"sheet"}; }
     catch(e){ return {error:e.message}; }
   }
   if(location.protocol!=="http:"&&location.protocol!=="https:") return null;
